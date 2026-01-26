@@ -1,0 +1,10 @@
+version: 2
+updates:
+  - package-ecosystem: "nuget"
+    # Define o diretório onde procurar os arquivos de projeto (.csproj) ou solução (.sln).
+    # "/" indica a raiz do repositório. Se o .sln estiver numa subpasta, ajuste este caminho.
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    # Limita o número de PRs abertos simultaneamente para não sobrecarregar.
+    open-pull-requests-limit: 10
