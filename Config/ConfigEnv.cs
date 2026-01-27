@@ -36,9 +36,9 @@ namespace RealLifeLawAssist.Configuration
 
             if (configData.TryGetValue("googleApi", out var googleApi))
             {
-                ApiKey = googleApi.GetValueOrDefault("apiKey");
-                Model = googleApi.GetValueOrDefault("model");
-                Url = googleApi.GetValueOrDefault("url");
+                ApiKey = googleApi.GetValueOrDefault("apiKey") ?? string.Empty;
+                Model = googleApi.GetValueOrDefault("model") ?? string.Empty;
+                Url = googleApi.GetValueOrDefault("url") ?? string.Empty;
             }
 
             Validate();
@@ -51,6 +51,9 @@ namespace RealLifeLawAssist.Configuration
             
             if (string.IsNullOrWhiteSpace(Model))
                 Model = "gemini-pro"; // Valor default caso não exista no YAML
+
+            if (string.IsNullOrWhiteSpace(Url))
+                throw new Exception("A URL da API do Google não foi encontrada no arquivo de configuração.");
         }
     }
 }
