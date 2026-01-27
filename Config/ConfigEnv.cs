@@ -9,6 +9,7 @@ namespace RealLifeLawAssist.Configuration
     {
         public string ApiKey { get; private set; } = string.Empty;
         public string Model { get; private set; } = string.Empty;
+        public string Url { get; private set; } = string.Empty;
 
         public ConfigEnv()
         {
@@ -35,8 +36,9 @@ namespace RealLifeLawAssist.Configuration
 
             if (configData.TryGetValue("googleApi", out var googleApi))
             {
-                ApiKey = googleApi.GetValueOrDefault("apiKey");
-                Model = googleApi.GetValueOrDefault("model");
+                ApiKey = googleApi.GetValueOrDefault("apiKey") ?? string.Empty;
+                Model = googleApi.GetValueOrDefault("model") ?? string.Empty;
+                Url = googleApi.GetValueOrDefault("url") ?? string.Empty;
             }
 
             Validate();
@@ -49,6 +51,9 @@ namespace RealLifeLawAssist.Configuration
             
             if (string.IsNullOrWhiteSpace(Model))
                 Model = "gemini-pro"; // Valor default caso não exista no YAML
+
+            if (string.IsNullOrWhiteSpace(Url))
+                throw new Exception("A URL da API do Google não foi encontrada no arquivo de configuração.");
         }
     }
 }

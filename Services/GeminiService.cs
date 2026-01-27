@@ -20,6 +20,7 @@ namespace RealLifeLawAssist.Services
         private readonly HttpClient _httpClient;
         private readonly string _apiKey;
         private readonly string _model;
+        private readonly string _url;
         private readonly ConfigEnv _config;
         private readonly AsyncRetryPolicy<HttpResponseMessage> _retryPolicy;
 
@@ -34,6 +35,7 @@ namespace RealLifeLawAssist.Services
             _httpClient = new HttpClient();
             _apiKey = _config.ApiKey;
             _model = _config.Model;
+            _url = _config.Url;
 
             // Configura uma política de repetição (retry) usando a biblioteca Polly.
             // Se a chamada à API falhar (retornar um status code não-sucesso),
@@ -53,7 +55,7 @@ namespace RealLifeLawAssist.Services
         public async Task<string> GenerateContentAsync(string text, string prompt)
         {
             // Constrói a URL do endpoint da API, inserindo o modelo e a chave de API.
-            var url = $"https://generativelanguage.googleapis.com/v1beta/{_model}:generateContent?key={_apiKey}";
+            var url = $"{_url}{_model}:generateContent?key={_apiKey}";
 
             var request = new GenerateContentRequest
             {
