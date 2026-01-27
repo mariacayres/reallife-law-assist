@@ -6,7 +6,6 @@ using System.Linq;
 using RealLifeLawAssist.Services;
 using RealLifeLawAssist.Configuration;
 
-class Program
 {
     // O método Main é o ponto de entrada da aplicação.
     // É declarado como 'async Task' para permitir o uso de chamadas assíncronas (await).
