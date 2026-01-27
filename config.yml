@@ -1,3 +1,4 @@
 googleApi:
   apiKey: "AIzaSyCILbLUfF0i3T3MK0rNfcKBvbuh_NjD1Xw"
   model: "models/gemini-flash-latest"
+  url: "https://generativelanguage.googleapis.com/v1beta/"
