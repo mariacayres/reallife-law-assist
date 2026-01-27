@@ -10,7 +10,7 @@ namespace RealLifeLawAssist.Configuration
         public string ApiKey { get; private set; } = string.Empty;
         public string Model { get; private set; } = string.Empty;
         public string Url { get; private set; } = string.Empty;
-
+        public string Validating { get; private set; } = string.Empty;
         public ConfigEnv()
         {
             string configFilePath = "config.yml";
@@ -39,6 +39,7 @@ namespace RealLifeLawAssist.Configuration
                 ApiKey = googleApi.GetValueOrDefault("apiKey") ?? string.Empty;
                 Model = googleApi.GetValueOrDefault("model") ?? string.Empty;
                 Url = googleApi.GetValueOrDefault("url") ?? string.Empty;
+                Validating = googleApi.GetValueOrDefault("validating") ?? string.Empty;
             }
 
             Validate();

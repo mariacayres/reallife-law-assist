@@ -21,6 +21,7 @@ namespace RealLifeLawAssist.Services
         private readonly string _apiKey;
         private readonly string _model;
         private readonly string _url;
+        private readonly string _validating;
         private readonly ConfigEnv _config;
         private readonly AsyncRetryPolicy<HttpResponseMessage> _retryPolicy;
 
@@ -36,6 +37,7 @@ namespace RealLifeLawAssist.Services
             _apiKey = _config.ApiKey;
             _model = _config.Model;
             _url = _config.Url;
+            _validating = _config.Validating;
 
             // Configura uma política de repetição (retry) usando a biblioteca Polly.
             // Se a chamada à API falhar (retornar um status code não-sucesso),
