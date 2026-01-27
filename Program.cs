@@ -24,17 +24,36 @@ try
     {
         return;
     }
+    bool validating = false;
+    string answer= "";
+    var prompt = "";
+    do
+    {
 
-    // --- 3. Interação com o Utilizador ---
-    // Pede ao utilizador para inserir o comando (prompt) que será usado para analisar os PDFs.
+    Console.WriteLine("deseja usar um prompt determinado? (s/n)");
+    answer= Console.ReadLine();
+    if (answer== "s")
+    {
+    prompt = "1. Estrutura Obrigatória: Definição clara do objeto e fixação do Preço Base (limite máximo).Distinção entre cláusulas fixas (adesão obrigatória) e aspetos variáveis (sujeitos à concorrência/avaliação).Definição das regras de execução: prazos, garantias e penalidades por incumprimento.2. Critérios de Avaliação de Risco:Risco Alto (Nota 1-2) - Indícios de Favorecimento: Especificações À Medida: Dimensões exatas (ex: 1024mm) ou técnicas sem justificação funcional. Prazos Impossíveis: Cronogramas de execução viáveis apenas para quem tenha informação privilegiada.Bloqueio de Marca: Referência a marcas, modelos ou patentes sem a menção expressa ou equivalente. Risco Baixo (Nota 4-5) - Boas Práticas:Descritivo Funcional: Especificações focadas no desempenho/resultado e não no método de fabrico.Realismo de Mercado: Prazos alinhados com os standards da indústria.Rigor na Execução: Regime de penalizações (multas) claro e dissuasor para atrasos ou falhas.";
+    validating= true;
+    }
+    else if (answer == "n  " )
+    {
     Console.WriteLine("Digite o prompt para validação do conteúdo:");
-    var prompt = Console.ReadLine();
+    prompt = Console.ReadLine();
     if (string.IsNullOrWhiteSpace(prompt))
     {
         Console.WriteLine("Prompt vazio. Saindo...");
         return;
+    }    validating= true;
     }
-
+    else
+    {
+        Console.WriteLine("tente novamente");
+    }
+    }while(validating==false);
+    // --- 3. Interação com o Utilizador ---
+    // Pede ao utilizador para inserir o comando (prompt) que será usado para analisar os PDFs.
     // --- 4. Processamento em Loop ---
     // Itera sobre cada arquivo PDF encontrado.
     foreach (var pdfPath in pdfFiles)
