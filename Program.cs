@@ -23,7 +23,7 @@ try
 
     string prompt;
 
-    if (config.Validating == "true")
+    if (config.Validating)
     {
         prompt =
             "1. Estrutura Obrigatória: Definição clara do objeto e fixação do Preço Base (limite máximo). " +
@@ -36,7 +36,7 @@ try
     else
     {
         Console.WriteLine("Digite o prompt para validação do conteúdo:");
-        prompt = Console.ReadLine();
+        prompt = Console.ReadLine() ?? string.Empty;
 
         if (string.IsNullOrWhiteSpace(prompt))
         {
@@ -70,6 +70,8 @@ try
             Console.WriteLine($"Erro ao processar PDF {pdfPath}: {exPdf.Message}");
         }
     }
-} catch(Exception ex){
- Console.WriteLine("");
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Error: {ex.Message}");
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
@@ -10,7 +11,7 @@ namespace RealLifeLawAssist.Configuration
         public string ApiKey { get; private set; } = string.Empty;
         public string Model { get; private set; } = string.Empty;
         public string Url { get; private set; } = string.Empty;
-        public string Validating { get; private set; } = string.Empty;
+        public bool Validating { get; private set; } = false;
         public ConfigEnv()
         {
             string configFilePath = "config.yml";
@@ -32,16 +33,24 @@ namespace RealLifeLawAssist.Configuration
             var yamlContent = System.IO.File.ReadAllText(filePath);
             
             // Deserializa para a estrutura esperada no seu config.yml
-            var configData = deserializer.Deserialize<Dictionary<string, Dictionary<string, string>>>(yamlContent);
+            // Deserializa para um dicionário genérico para lidar com chaves em diferentes níveis
+            var configData = deserializer.Deserialize<Dictionary<string, object>>(yamlContent);
 
-            if (configData.TryGetValue("googleApi", out var googleApi))
+            if (configData.TryGetValue("googleApi", out var googleApiObj) && googleApiObj is Dictionary<object, object> googleApiRaw)
             {
+                // Converte o dicionário aninhado para <string, string> para facilitar o uso
+                var googleApi = googleApiRaw.ToDictionary(kvp => kvp.Key.ToString() ?? string.Empty, kvp => kvp.Value.ToString() ?? string.Empty);
+
                 ApiKey = googleApi.GetValueOrDefault("apiKey") ?? string.Empty;
                 Model = googleApi.GetValueOrDefault("model") ?? string.Empty;
                 Url = googleApi.GetValueOrDefault("url") ?? string.Empty;
-                Validating = googleApi.GetValueOrDefault("validating") ?? string.Empty;
             }
 
+            // A chave 'validating' agora está na raiz do YAML, então a lemos a partir do dicionário principal
+            if (configData.TryGetValue("validating", out var validatingValue))
+            {
+                Validating = bool.TryParse(validatingValue?.ToString(), out var validating) ? validating : false;
+            }
             Validate();
         }
 
@@ -55,6 +64,9 @@ namespace RealLifeLawAssist.Configuration
 
             if (string.IsNullOrWhiteSpace(Url))
                 throw new Exception("A URL da API do Google não foi encontrada no arquivo de configuração.");
+            
+            if (string.IsNullOrWhiteSpace(Validating.ToString()))
+                throw new Exception("A opção de validação do prompt não foi encontrada no arquivo de configuração.");
         }
     }
 }
