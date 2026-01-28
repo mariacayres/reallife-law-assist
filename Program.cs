@@ -27,6 +27,27 @@ try
         return;
     }
 
+    string jsonInstruction = @"
+    Analise o documento e responda ESTRITAMENTE com um JSON válido (sem markdown ```json) seguindo esta estrutura:
+    {
+    ""titulo"": ""Titulo do Relatório"",
+    ""descricao"": ""Resumo executivo curto"",
+    ""objeto"": ""Descrição do objeto do contrato"",
+    ""localizacao"": ""Locais de execução"",
+    ""totalLinhas"": ""Ex: 12 circuitos"",
+    ""precoBase"": 0.0,
+    ""custoKm"": 0.0,
+    ""kmMax"": 0.0,
+    ""vigencia"": ""Ex: 60 dias"",
+    ""caucao"": ""Ex: 5%"",
+    ""pagamento"": ""Ex: 30 dias"",
+    ""conclusao"": ""Texto da conclusão final"",
+    ""clausulasFixas"": [ { ""area"": ""Ex: Frota"", ""clausula"": ""Art. 5"", ""requisito"": ""Descrição"" } ],
+    ""aspetosVariaveis"": [ { ""titulo"": ""Ex: Preço"", ""descricao"": ""Critério"" } ],
+    ""penalidades"": [ { ""nivel"": ""Leve/Grave"", ""exemplos"": ""Atraso"", ""coima"": ""Valor"", ""compulsoria"": ""Valor"" } ],
+    ""riscos"": [ { ""tipo"": ""Alto/Baixo"", ""titulo"": ""Titulo"", ""descricao"": ""Descrição"" } ]
+    }";
+
     string prompt;
 
     if (config.Validating)
@@ -51,6 +72,8 @@ try
         }
     }
 
+    string fullPrompt = $"{prompt}\n\n{jsonInstruction}";
+
     // --- 3. Processamento ---
     foreach (var pdfPath in pdfFiles)
     {
@@ -65,7 +88,7 @@ try
                 continue;
             }
 
-            var analysis = await geminiService.GenerateContentAsync(pdfText, prompt);
+            var analysis = await geminiService.GenerateContentAsync(pdfText, fullPrompt);
 
             Console.WriteLine("\n--- RESPOSTA DO GEMINI ---\n");
             Console.WriteLine(analysis);
