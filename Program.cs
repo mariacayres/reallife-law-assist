@@ -1,4 +1,5 @@
 ﻿﻿using System;
+using System.IO;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Collections.Generic;
@@ -10,11 +11,16 @@ try
 {
     // --- 1. Inicialização dos Serviços ---
     using var geminiService = new GeminiService();
-    var pdfService = new PdfReaderService();
-    var config = new ConfigEnv(); // ✅ variável local, não campo
+    var pdfReaderService = new PdfReaderService();
+    var pdfOutputService = new PdfService();
+    var config = new ConfigEnv();
 
-    // --- 2. Leitura e Validação dos PDFs ---
-    var pdfFiles = pdfService.GetPdfFiles()?.ToList() ?? new List<string>();
+    // Pasta onde os PDFs de saída serão salvos
+    var outputDir = Path.Combine(Directory.GetCurrentDirectory(), "consolidado");
+    Directory.CreateDirectory(outputDir);
+
+    // --- 2. Leitura dos PDFs ---
+    var pdfFiles = pdfReaderService.GetPdfFiles()?.ToList() ?? new List<string>();
     if (pdfFiles.Count == 0)
     {
         Console.WriteLine("Nenhum PDF encontrado.");
@@ -30,8 +36,8 @@ try
             "Distinção entre cláusulas fixas (adesão obrigatória) e aspetos variáveis (sujeitos à concorrência/avaliação). " +
             "Definição das regras de execução: prazos, garantias e penalidades por incumprimento. " +
             "2. Critérios de Avaliação de Risco: " +
-            "Risco Alto (Nota 1-2) - Indícios de Favorecimento: Especificações à medida, prazos impossíveis, bloqueio de marca. " +
-            "Risco Baixo (Nota 4-5) - Boas Práticas: Descritivo funcional, realismo de mercado, rigor na execução.";
+            "Risco Alto (Nota 1-2) - Indícios de Favorecimento. " +
+            "Risco Baixo (Nota 4-5) - Boas Práticas.";
     }
     else
     {
@@ -45,33 +51,47 @@ try
         }
     }
 
-    // --- 3. Processamento dos PDFs ---
+    // --- 3. Processamento ---
     foreach (var pdfPath in pdfFiles)
     {
         try
         {
             Console.WriteLine($"\n=== Processando PDF: {pdfPath} ===");
 
-            var pdfText = pdfService.ExtractTextFromPdf(pdfPath);
-
+            var pdfText = pdfReaderService.ExtractTextFromPdf(pdfPath);
             if (string.IsNullOrWhiteSpace(pdfText))
             {
-                Console.WriteLine("PDF vazio ou sem texto extraível. Pulando...");
+                Console.WriteLine("PDF vazio. Pulando...");
                 continue;
             }
 
-            var result = await geminiService.GenerateContentAsync(pdfText, prompt);
+            var analysis = await geminiService.GenerateContentAsync(pdfText, prompt);
 
             Console.WriteLine("\n--- RESPOSTA DO GEMINI ---\n");
-            Console.WriteLine(result);
+            Console.WriteLine(analysis);
+
+            // --- 4. GERAR PDF DE SAÍDA ---
+            var fileName = Path.GetFileNameWithoutExtension(pdfPath);
+            var outputPdfPath = Path.Combine(
+                outputDir,
+                $"{fileName}_analise.pdf"
+            );
+
+            pdfOutputService.CreateAnalysisPdf(
+                outputPdfPath,
+                fileName,
+                analysis
+            );
+
+            Console.WriteLine($"PDF de análise gerado: {outputPdfPath}");
         }
         catch (Exception exPdf)
         {
-            Console.WriteLine($"Erro ao processar PDF {pdfPath}: {exPdf.Message}");
+            Console.WriteLine($"Erro ao processar {pdfPath}: {exPdf.Message}");
         }
     }
 }
 catch (Exception ex)
 {
-    Console.WriteLine($"Error: {ex.Message}");
+    Console.WriteLine($"Erro geral: {ex.Message}");
 }
