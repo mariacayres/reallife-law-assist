@@ -1,80 +1,126 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Text;
-using UglyToad.PdfPig;
+using PdfSharpCore.Drawing;
+using PdfSharpCore.Pdf;
 
 namespace RealLifeLawAssist.Services
 {
-    /// <summary>
-    /// Serviço responsável por encontrar e extrair texto de arquivos PDF.
-    /// </summary>
-    public class PdfReaderService
+    public class PdfService
     {
-        private readonly string _pdfFolder;
-
-        /// <summary>
-        /// Inicializa uma nova instância do <see cref="PdfReaderService"/>.
-        /// Determina o caminho para a pasta "pdfs" na raiz do projeto.
-        /// </summary>
-        public PdfReaderService()
+        public void CreateAnalysisPdf(string outputPath, string title, string content)
         {
-            // Este código determina o caminho da pasta "pdfs" de forma relativa à localização do executável.
-            // Sobe 3 níveis a partir da pasta de compilação (ex: bin/Debug/netX.X) para chegar à raiz do projeto.
-            var projectRoot = Directory.GetParent(AppContext.BaseDirectory)?
-                           .Parent?.Parent?.Parent?.FullName; // sobe 3 níveis
-
-            if (string.IsNullOrEmpty(projectRoot))
-                // Lança uma exceção mais específica e antes de usar a variável nula.
-                throw new DirectoryNotFoundException("Não foi possível determinar a raiz do projeto para encontrar a pasta de PDFs.");
-
-            _pdfFolder = Path.Combine(projectRoot, "pdfs");
-            Console.WriteLine($"Procurando PDFs na pasta: {_pdfFolder}");
-        }
-
-        /// <summary>
-        /// Procura e retorna os caminhos de todos os arquivos .pdf na pasta configurada.
-        /// </summary>
-        /// <returns>Uma coleção de strings, onde cada string é o caminho completo para um arquivo PDF.</returns>
-        public IEnumerable<string> GetPdfFiles()
-        {
-            if (!Directory.Exists(_pdfFolder))
+            try
             {
-                Console.WriteLine($"Pasta {_pdfFolder} não encontrada.");
-                return Array.Empty<string>();
-            }
+                Console.WriteLine($"Iniciando criação do PDF: {outputPath}");
 
-            var pdfFiles = Directory.GetFiles(_pdfFolder, "*.pdf");
-            if (pdfFiles.Length == 0)
+                var directory = Path.GetDirectoryName(outputPath);
+                if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+                {
+                    Directory.CreateDirectory(directory);
+                }
+
+                var document = new PdfDocument();
+                var page = document.AddPage();
+                var gfx = XGraphics.FromPdfPage(page);
+
+                var titleFont = new XFont("Arial", 18, XFontStyle.Bold);
+                var headerFont = new XFont("Arial", 14, XFontStyle.Bold);
+                var bodyFont = new XFont("Arial", 11, XFontStyle.Regular);
+                var footerFont = new XFont("Arial", 9, XFontStyle.Regular);
+
+                double yPosition = 50;
+
+                // Título
+                gfx.DrawString(
+                    "Relatório de Análise Jurídica AI",
+                    titleFont,
+                    XBrushes.Black,
+                    new XRect(50, yPosition, page.Width, 30),
+                    XStringFormats.TopLeft
+                );
+                yPosition += 40;
+
+                // Documento original
+                gfx.DrawString(
+                    $"Documento Original: {title}",
+                    bodyFont,
+                    XBrushes.Black,
+                    50,
+                    yPosition
+                );
+                yPosition += 40;
+
+                // Cabeçalho da análise
+                gfx.DrawString("Análise:", headerFont, XBrushes.Black, 50, yPosition);
+                yPosition += 30;
+
+                double maxLineWidth = page.Width - 100;
+
+                var lines = content.Split('\n');
+
+                foreach (var line in lines)
+                {
+                    if (yPosition > page.Height - 100)
+                    {
+                        page = document.AddPage();
+                        gfx = XGraphics.FromPdfPage(page);
+                        yPosition = 50;
+                    }
+
+                    var words = line.Split(' ');
+                    var currentLine = "";
+
+                    foreach (var word in words)
+                    {
+                        var testLine = string.IsNullOrEmpty(currentLine)
+                            ? word
+                            : currentLine + " " + word;
+
+                        var size = gfx.MeasureString(testLine, bodyFont);
+
+                        if (size.Width > maxLineWidth && !string.IsNullOrEmpty(currentLine))
+                        {
+                            gfx.DrawString(currentLine, bodyFont, XBrushes.Black, 50, yPosition);
+                            yPosition += 20;
+                            currentLine = word;
+                        }
+                        else
+                        {
+                            currentLine = testLine;
+                        }
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(currentLine))
+                    {
+                        gfx.DrawString(currentLine, bodyFont, XBrushes.Black, 50, yPosition);
+                        yPosition += 20;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(line))
+                    {
+                        yPosition += 10;
+                    }
+                }
+
+                yPosition += 20;
+                gfx.DrawString(
+                    $"Gerado em: {DateTime.Now:dd/MM/yyyy HH:mm:ss}",
+                    footerFont,
+                    XBrushes.Gray,
+                    50,
+                    yPosition
+                );
+
+                document.Save(outputPath);
+                document.Close();
+
+                Console.WriteLine($"PDF criado com sucesso: {outputPath}");
+            }
+            catch (Exception ex)
             {
-                Console.WriteLine("Nenhum PDF encontrado. Saindo...");
+                Console.WriteLine($"Erro ao criar PDF: {ex.Message}");
+                throw;
             }
-
-            return pdfFiles;
-        }
-
-        /// <summary>
-        /// Extrai todo o texto de um arquivo PDF especificado.
-        /// </summary>
-        /// <param name="pdfPath">O caminho completo para o arquivo PDF.</param>
-        /// <returns>Uma string contendo todo o texto extraído do documento.</returns>
-        /// <exception cref="FileNotFoundException">Lançada se o arquivo PDF não for encontrado no caminho especificado.</exception>
-        public string ExtractTextFromPdf(string pdfPath)
-        {
-            if (!File.Exists(pdfPath))
-                throw new FileNotFoundException("PDF não encontrado.", pdfPath);
-
-            using var pdf = PdfDocument.Open(pdfPath);
-            // Usa StringBuilder para uma concatenação de strings eficiente dentro do loop.
-            var textBuilder = new StringBuilder();
-
-            foreach (var page in pdf.GetPages())
-            {
-                textBuilder.Append(page.Text);
-                textBuilder.AppendLine(); // Adiciona o texto da página e uma nova linha.
-            }
-
-            return textBuilder.ToString();
         }
     }
 }
