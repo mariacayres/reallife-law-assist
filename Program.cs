@@ -1,11 +1,13 @@
 ﻿﻿using System;
-using System.IO;
-using System.Net.Http;
-using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
-using RealLifeLawAssist.Services;
+using System.Net.Http;
+using System.Text.Json;
+using System.Threading.Tasks;
 using RealLifeLawAssist.Configuration;
+using RealLifeLawAssist.Models;
+using RealLifeLawAssist.Services;
 
 try
 {
@@ -27,25 +29,26 @@ try
         return;
     }
 
-    string jsonInstruction = @"
+    string jsonInstruction =
+        @"
     Analise o documento e responda ESTRITAMENTE com um JSON válido (sem markdown ```json) seguindo esta estrutura:
     {
-    ""titulo"": ""Titulo do Relatório"",
-    ""descricao"": ""Resumo executivo curto"",
-    ""objeto"": ""Descrição do objeto do contrato"",
-    ""localizacao"": ""Locais de execução"",
-    ""totalLinhas"": ""Ex: 12 circuitos"",
-    ""precoBase"": 0.0,
-    ""custoKm"": 0.0,
-    ""kmMax"": 0.0,
-    ""vigencia"": ""Ex: 60 dias"",
-    ""caucao"": ""Ex: 5%"",
-    ""pagamento"": ""Ex: 30 dias"",
-    ""conclusao"": ""Texto da conclusão final"",
-    ""clausulasFixas"": [ { ""area"": ""Ex: Frota"", ""clausula"": ""Art. 5"", ""requisito"": ""Descrição"" } ],
-    ""aspetosVariaveis"": [ { ""titulo"": ""Ex: Preço"", ""descricao"": ""Critério"" } ],
-    ""penalidades"": [ { ""nivel"": ""Leve/Grave"", ""exemplos"": ""Atraso"", ""coima"": ""Valor"", ""compulsoria"": ""Valor"" } ],
-    ""riscos"": [ { ""tipo"": ""Alto/Baixo"", ""titulo"": ""Titulo"", ""descricao"": ""Descrição"" } ]
+        ""titulo"": ""Titulo do Relatório"",
+        ""descricao"": ""Resumo executivo curto"",
+        ""objeto"": ""Descrição do objeto do contrato"",
+        ""localizacao"": ""Locais de execução"",
+        ""totalLinhas"": ""Ex: 12 circuitos"",
+        ""precoBase"": 0.0,
+        ""custoKm"": 0.0,
+        ""kmMax"": 0.0,
+        ""vigencia"": ""Ex: 60 dias"",
+        ""caucao"": ""Ex: 5%"",
+        ""pagamento"": ""Ex: 30 dias"",
+        ""conclusao"": ""Texto da conclusão final"",
+        ""clausulasFixas"": [ { ""area"": ""Ex: Frota"", ""clausula"": ""Art. 5"", ""requisito"": ""Descrição"" } ],
+        ""aspetosVariaveis"": [ { ""titulo"": ""Ex: Preço"", ""descricao"": ""Critério"" } ],
+        ""penalidades"": [ { ""nivel"": ""Leve/Grave"", ""exemplos"": ""Atraso"", ""coima"": ""Valor"", ""compulsoria"": ""Valor"" } ],
+        ""riscos"": [ { ""tipo"": ""Alto/Baixo"", ""titulo"": ""Titulo"", ""descricao"": ""Descrição"" } ]
     }";
 
     string prompt;
@@ -53,12 +56,12 @@ try
     if (config.Validating)
     {
         prompt =
-            "1. Estrutura Obrigatória: Definição clara do objeto e fixação do Preço Base (limite máximo). " +
-            "Distinção entre cláusulas fixas (adesão obrigatória) e aspetos variáveis (sujeitos à concorrência/avaliação). " +
-            "Definição das regras de execução: prazos, garantias e penalidades por incumprimento. " +
-            "2. Critérios de Avaliação de Risco: " +
-            "Risco Alto (Nota 1-2) - Indícios de Favorecimento. " +
-            "Risco Baixo (Nota 4-5) - Boas Práticas.";
+            "1. Estrutura Obrigatória: Definição clara do objeto e fixação do Preço Base (limite máximo). "
+            + "Distinção entre cláusulas fixas (adesão obrigatória) e aspetos variáveis (sujeitos à concorrência/avaliação). "
+            + "Definição das regras de execução: prazos, garantias e penalidades por incumprimento. "
+            + "2. Critérios de Avaliação de Risco: "
+            + "Risco Alto (Nota 1-2) - Indícios de Favorecimento. "
+            + "Risco Baixo (Nota 4-5) - Boas Práticas.";
     }
     else
     {
@@ -95,16 +98,25 @@ try
 
             // --- 4. GERAR PDF DE SAÍDA ---
             var fileName = Path.GetFileNameWithoutExtension(pdfPath);
-            var outputPdfPath = Path.Combine(
-                outputDir,
-                $"{fileName}_analise.pdf"
-            );
+            var outputPdfPath = Path.Combine(outputDir, $"{fileName}_analise.pdf");
 
-            pdfOutputService.CreateAnalysisPdf(
-                outputPdfPath,
-                fileName,
-                analysis
-            );
+            AnaliseDados dados;
+
+            try
+            {
+                dados = JsonSerializer.Deserialize<AnaliseDados>(
+                    analysis,
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+                )!;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Erro ao converter JSON para AnaliseDados:");
+                Console.WriteLine(ex.Message);
+                continue;
+            }
+
+            pdfOutputService.CreateAnalysisPdf(outputPdfPath, Path.GetFileName(pdfPath), dados);
 
             Console.WriteLine($"PDF de análise gerado: {outputPdfPath}");
         }
