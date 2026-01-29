@@ -34,7 +34,7 @@ namespace RealLifeLawAssist.Services
 
                 DrawHeader(gfx, currentPage);
 
-                // Título e Metadados
+                // Título e Metadados  
                 gfx.DrawString(
                     "Relatório de Análise Técnica",
                     titleFont,
