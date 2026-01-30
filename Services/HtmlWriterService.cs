@@ -86,7 +86,7 @@ namespace RealLifeLawAssist.Services
                     "                <span class='bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold'>1</span>"
                 );
                 htmlContent.AppendLine(
-                    "                <h2 class='text-2xl font-bold text-slate-800'>Objeto e Fixação do Preço Base</h2>"
+                    "                <h2 class='text-3xl font-bold text-slate-800'>Objeto e Fixação do Preço Base</h2>"
                 );
                 htmlContent.AppendLine("            </div>");
                 htmlContent.AppendLine("            <div class='grid md:grid-cols-2 gap-6'>");
@@ -120,18 +120,11 @@ namespace RealLifeLawAssist.Services
                 );
                 htmlContent.AppendLine("                    <div class='space-y-4'>");
                 htmlContent.AppendLine(
-                    $"                        <div><p class='text-xs text-blue-300 uppercase font-bold tracking-wider'>Preço Base (S/ IVA)</p><p class='text-2xl font-bold'>{data.PrecoBase.ToString("C", culture)}</p></div>"
+                    $"                        <div><p class='text-xs text-blue-300 uppercase font-bold tracking-wider'>Preço Base (S/ IVA)</p><p class='text-5xl font-bold'>{data.PrecoBase.ToString("C", culture)}</p></div>"
                 );
                 htmlContent.AppendLine(
                     "                        <div class='grid grid-cols-2 gap-4 border-t border-blue-800 pt-4 text-sm'>"
                 );
-                htmlContent.AppendLine(
-                    $"                            <div><p class='text-blue-300'>Custo Máx/Km</p><p class='font-bold'>{data.CustoKm.ToString("C", culture)}</p></div>"
-                );
-                htmlContent.AppendLine(
-                    $"                            <div><p class='text-blue-300'>Km Máximos</p><p class='font-bold'>{data.KmMax:N0} km</p></div>"
-                );
-                htmlContent.AppendLine("                        </div>");
                 htmlContent.AppendLine("                    </div>");
                 htmlContent.AppendLine("                </div>");
                 htmlContent.AppendLine("            </div>");
@@ -191,7 +184,7 @@ namespace RealLifeLawAssist.Services
                     "                <h3 class='font-bold text-amber-800 mb-4 flex items-center'><i class='fas fa-trophy mr-2'></i> Aspetos Variáveis (Fatores de Avaliação)</h3>"
                 );
                 htmlContent.AppendLine(
-                    "                <div class='grid md:grid-cols-2 lg:grid-cols-4 gap-4'>"
+                    "                <div class='grid md:grid-cols-2 lg:grid-cols-4 gap-3'>"
                 );
                 foreach (var item in data.AspetosVariaveis ?? new List<AspetoVariavel>())
                 {
