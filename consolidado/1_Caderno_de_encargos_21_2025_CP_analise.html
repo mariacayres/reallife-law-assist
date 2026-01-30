@@ -6,22 +6,26 @@
     <title>Análise Técnica - 1_Caderno_de_encargos_21_2025_CP.pdf</title>
     <script src='https://cdn.tailwindcss.com'></script>
     <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/three.js/r121/three.min.js'></script>
+    <script src='https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.waves.min.js'></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; }
         .clause-tag { @apply bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded border border-blue-400; }
         .risk-high { @apply border-l-4 border-red-500 bg-red-50; }
         .risk-low { @apply border-l-4 border-green-500 bg-green-50; }
+        #vanta-bg > div { position: relative; z-index: 2; }
+        canvas { z-index: 1 !important; }
     </style>
 </head>
 <body class='bg-gray-50 text-gray-900 leading-relaxed'>
-    <header class='bg-slate-900 text-white py-12 px-6 shadow-lg'>
+    <header id='vanta-bg' class='text-white py-16 px-6 shadow-lg relative overflow-hidden'>
         <div class='max-w-5xl mx-auto'>
             <div class='flex items-center space-x-4 mb-4'>
                 <img src='../img/logo.png' alt='Law Assist Logo' class='h-12' />
-                <h1 class='text-3xl font-bold tracking-tight'>CADERNO DE ENCARGOS AQUISI&#199;&#195;O DE SERVI&#199;OS CONCURSO P&#218;BLICO “Manuten&#231;&#227;o de AVAC e Sistemas de &#193;guas Quentes Sanit&#225;rias”</h1>
+                <h1 class='text-3xl font-bold tracking-tight'>CADERNO DE ENCARGOS: Manuten&#231;&#227;o de AVAC e Sistemas de &#193;guas Quentes Sanit&#225;rias</h1>
             </div>
-            <p class='text-slate-400 max-w-4xl'>Aquisi&#231;&#227;o de servi&#231;os de manuten&#231;&#227;o preventiva e corretiva de sistemas de Aquecimento, Ventila&#231;&#227;o e Ar Condicionado (AVAC) e &#193;guas Quentes Sanit&#225;rias (AQS) para os Servi&#231;os Municipalizados de Castelo Branco.</p>
+            <p class='text-slate-400 max-w-4xl'>Procedimento de concurso p&#250;blico para aquisi&#231;&#227;o de servi&#231;os de manuten&#231;&#227;o preventiva e corretiva de sistemas de AVAC (Aquecimento, Ventila&#231;&#227;o e Ar Condicionado) e AQS (&#193;guas Quentes Sanit&#225;rias) para os Servi&#231;os Municipalizados de Castelo Branco.</p>
         </div>
     </header>
     <main class='max-w-5xl mx-auto py-10 px-6 space-y-12'>
@@ -35,8 +39,8 @@
                     <h3 class='font-semibold text-lg mb-3 flex items-center text-blue-700'><i class='fas fa-globe mr-2'></i> Definição do Objeto</h3>
                     <p class='text-sm text-gray-600 mb-4'>Manuten&#231;&#227;o de AVAC e Sistemas de &#193;guas Quentes Sanit&#225;rias.</p>
                     <div class='space-y-2'>
-                        <div class='flex justify-between text-xs font-medium'><span class='text-gray-500'>Localização</span><span>Instala&#231;&#245;es dos Servi&#231;os Municipalizados de Castelo Branco (SMCB)</span></div>
-                        <div class='flex justify-between text-xs font-medium'><span class='text-gray-500'>Oferta</span><span>N/A</span></div>
+                        <div class='flex justify-between text-xs font-medium'><span class='text-gray-500'>Localização</span><span>Instala&#231;&#245;es geridas pelos Servi&#231;os Municipalizados de Castelo Branco.</span></div>
+                        <div class='flex justify-between text-xs font-medium'><span class='text-gray-500'>Oferta</span><span>N/A (Servi&#231;os de manuten&#231;&#227;o)</span></div>
                     </div>
                 </div>
                 <div class='bg-blue-900 text-white p-6 rounded-xl shadow-md'>
@@ -59,34 +63,29 @@
                     <thead class='bg-gray-50 text-gray-500'><tr><th class='px-4 py-3 font-semibold'>Área</th><th class='px-4 py-3 font-semibold text-center'>Cláusula</th><th class='px-4 py-3 font-semibold'>Requisito Obrigatório</th></tr></thead>
                     <tbody class='divide-y divide-gray-200 bg-white'>
                         <tr>
-                            <td class='px-4 py-3 font-semibold text-blue-600'>Execu&#231;&#227;o/Qualidade</td>
+                            <td class='px-4 py-3 font-semibold text-blue-600'>Habilita&#231;&#227;o</td>
                             <td class='px-4 py-3 text-center'><span class='clause-tag'>Art. 2.1.1.2</span></td>
-                            <td class='px-4 py-3'>O prestador deve ser titular de habilita&#231;&#245;es e/ou autoriza&#231;&#245;es profissionais necess&#225;rias ao exerc&#237;cio da sua atividade.</td>
+                            <td class='px-4 py-3'>O prestador deve ser titular de habilita&#231;&#245;es e/ou autoriza&#231;&#245;es profissionais comprovadamente necess&#225;rias ao exerc&#237;cio da atividade.</td>
                         </tr>
                         <tr>
-                            <td class='px-4 py-3 font-semibold text-blue-600'>Execu&#231;&#227;o/Financeiro</td>
-                            <td class='px-4 py-3 text-center'><span class='clause-tag'>Art. 2.1.1.3</span></td>
-                            <td class='px-4 py-3'>Submeter &#224; aprova&#231;&#227;o pr&#233;via um or&#231;amento discriminativo dos servi&#231;os a executar e das pe&#231;as a incorporar, com pre&#231;os individualizados.</td>
+                            <td class='px-4 py-3 font-semibold text-blue-600'>Execu&#231;&#227;o Financeira</td>
+                            <td class='px-4 py-3 text-center'><span class='clause-tag'>Art. 4.2</span></td>
+                            <td class='px-4 py-3'>O pre&#231;o contratual inclui todos os custos, encargos e despesas, nomeadamente meios humanos, materiais, transporte, armazenamento e quaisquer encargos decorrentes de marcas ou licen&#231;as.</td>
                         </tr>
                         <tr>
-                            <td class='px-4 py-3 font-semibold text-blue-600'>Vigil&#226;ncia</td>
-                            <td class='px-4 py-3 text-center'><span class='clause-tag'>Art. 2.1.3</span></td>
-                            <td class='px-4 py-3'>A entidade adjudicante reserva-se o direito de verificar o cumprimento das obriga&#231;&#245;es contratuais e inspecionar equipamentos.</td>
+                            <td class='px-4 py-3 font-semibold text-blue-600'>Or&#231;amento e Pagamento</td>
+                            <td class='px-4 py-3 text-center'><span class='clause-tag'>Art. 2.1.1.3 / 4.4</span></td>
+                            <td class='px-4 py-3'>O prestador de servi&#231;os deve submeter &#224; aprova&#231;&#227;o pr&#233;via um or&#231;amento discriminativo dos servi&#231;os a executar e das pe&#231;as a incorporar com indica&#231;&#227;o dos pre&#231;os individualizados. O pagamento &#233; feito no final de cada interven&#231;&#227;o aprovada.</td>
                         </tr>
                         <tr>
-                            <td class='px-4 py-3 font-semibold text-blue-600'>Prazos</td>
-                            <td class='px-4 py-3 text-center'><span class='clause-tag'>Art. 2.1.4 / 15</span></td>
-                            <td class='px-4 py-3'>Os prazos s&#227;o cont&#237;nuos, correndo em s&#225;bados, domingos e dias feriados.</td>
+                            <td class='px-4 py-3 font-semibold text-blue-600'>Sigilo</td>
+                            <td class='px-4 py-3 text-center'><span class='clause-tag'>Art. 3.1.4</span></td>
+                            <td class='px-4 py-3'>O dever de sigilo mant&#233;m-se em vigor durante o prazo de dois anos a contar do cumprimento ou cessa&#231;&#227;o do contrato.</td>
                         </tr>
                         <tr>
                             <td class='px-4 py-3 font-semibold text-blue-600'>Subcontrata&#231;&#227;o</td>
                             <td class='px-4 py-3 text-center'><span class='clause-tag'>Art. 11.4</span></td>
                             <td class='px-4 py-3'>&#201; proibida a subcontrata&#231;&#227;o de mais de 50% do pre&#231;o contratual.</td>
-                        </tr>
-                        <tr>
-                            <td class='px-4 py-3 font-semibold text-blue-600'>Sigilo</td>
-                            <td class='px-4 py-3 text-center'><span class='clause-tag'>Art. 3.1.4</span></td>
-                            <td class='px-4 py-3'>O dever de sigilo mant&#233;m-se em vigor durante o prazo de dois anos a contar da cessa&#231;&#227;o do contrato.</td>
                         </tr>
                     </tbody>
                 </table>
@@ -95,20 +94,16 @@
                 <h3 class='font-bold text-amber-800 mb-4 flex items-center'><i class='fas fa-trophy mr-2'></i> Aspetos Variáveis (Fatores de Avaliação)</h3>
                 <div class='grid md:grid-cols-2 lg:grid-cols-4 gap-3'>
                     <div class='bg-white p-3 rounded-lg border border-amber-200 shadow-sm'>
-                        <p class='text-xs text-amber-600 font-bold uppercase'>Pre&#231;o Final</p>
-                        <p class='text-sm'>O pre&#231;o contratual ser&#225; o constante na proposta adjudicada (acrescido de IVA), desde que n&#227;o exceda o pre&#231;o base de €28.000,00.</p>
+                        <p class='text-xs text-amber-600 font-bold uppercase'>Pre&#231;o Total</p>
+                        <p class='text-sm'>O valor final a ser pago (acrescido de IVA) corresponde ao pre&#231;o constante da proposta adjudicada, limitado ao valor base de 28.000,00€.</p>
                     </div>
                     <div class='bg-white p-3 rounded-lg border border-amber-200 shadow-sm'>
-                        <p class='text-xs text-amber-600 font-bold uppercase'>Or&#231;amenta&#231;&#227;o da Interven&#231;&#227;o</p>
-                        <p class='text-sm'>O pagamento &#233; efetuado no final de cada interven&#231;&#227;o, de acordo com o or&#231;amento apresentado e aprovado pelos Servi&#231;os Municipalizados de Castelo Branco.</p>
-                    </div>
-                    <div class='bg-white p-3 rounded-lg border border-amber-200 shadow-sm'>
-                        <p class='text-xs text-amber-600 font-bold uppercase'>Ajuste Contratual</p>
-                        <p class='text-sm'>O contrato integra os suprimentos de erros/omiss&#245;es do Caderno de Encargos aceites pelo &#243;rg&#227;o competente e os esclarecimentos sobre a proposta adjudicada.</p>
+                        <p class='text-xs text-amber-600 font-bold uppercase'>Ajustes Contratuais</p>
+                        <p class='text-sm'>Os suprimentos de erros, omiss&#245;es, esclarecimentos e a proposta adjudicada prevalecem sobre o clausulado do contrato, exceto ajustamentos propostos e aceites nos termos do CCP.</p>
                     </div>
                     <div class='bg-white p-3 rounded-lg border border-amber-200 shadow-sm'>
                         <p class='text-xs text-amber-600 font-bold uppercase'>Revis&#227;o de Pre&#231;os</p>
-                        <p class='text-sm'>N&#227;o haver&#225; lugar &#224; revis&#227;o de pre&#231;os durante o per&#237;odo de execu&#231;&#227;o contratual, com exce&#231;&#227;o das situa&#231;&#245;es legalmente previstas e aplic&#225;veis.</p>
+                        <p class='text-sm'>N&#227;o haver&#225; lugar &#224; revis&#227;o de pre&#231;os durante o per&#237;odo de execu&#231;&#227;o contratual, com exce&#231;&#227;o das situa&#231;&#245;es legalmente previstas e aplic&#225;veis ao &#226;mbito do contrato.</p>
                     </div>
                 </div>
             </div>
@@ -119,9 +114,9 @@
                 <h2 class='text-2xl font-bold text-slate-800'>Prazos e Regime Sancionatório</h2>
             </div>
             <div class='grid md:grid-cols-3 gap-6 mb-8 text-center'>
-                <div class='bg-white p-6 rounded-xl border border-gray-200 shadow-sm'><i class='fas fa-calendar-alt text-gray-400 text-2xl mb-2'></i><p class='text-xs text-gray-500 uppercase font-bold'>Vigência Base</p><p class='text-xl font-bold'>730 dias (ou at&#233; perfazer o valor do pre&#231;o base)</p></div>
-                <div class='bg-white p-6 rounded-xl border border-gray-200 shadow-sm'><i class='fas fa-shield-alt text-gray-400 text-2xl mb-2'></i><p class='text-xs text-gray-500 uppercase font-bold'>Caução</p><p class='text-xl font-bold'>N/A (N&#227;o especificada no CE)</p></div>
-                <div class='bg-white p-6 rounded-xl border border-gray-200 shadow-sm'><i class='fas fa-file-invoice text-gray-400 text-2xl mb-2'></i><p class='text-xs text-gray-500 uppercase font-bold'>Pagamento</p><p class='text-xl font-bold'>30 a 60 dias ap&#243;s a rece&#231;&#227;o das faturas (ap&#243;s o vencimento da obriga&#231;&#227;o)</p></div>
+                <div class='bg-white p-6 rounded-xl border border-gray-200 shadow-sm'><i class='fas fa-calendar-alt text-gray-400 text-2xl mb-2'></i><p class='text-xs text-gray-500 uppercase font-bold'>Vigência Base</p><p class='text-xl font-bold'>730 dias ou at&#233; perfazer o valor do pre&#231;o base (o que ocorrer primeiro).</p></div>
+                <div class='bg-white p-6 rounded-xl border border-gray-200 shadow-sm'><i class='fas fa-shield-alt text-gray-400 text-2xl mb-2'></i><p class='text-xs text-gray-500 uppercase font-bold'>Caução</p><p class='text-xl font-bold'>N&#227;o especificado no excerto.</p></div>
+                <div class='bg-white p-6 rounded-xl border border-gray-200 shadow-sm'><i class='fas fa-file-invoice text-gray-400 text-2xl mb-2'></i><p class='text-xs text-gray-500 uppercase font-bold'>Pagamento</p><p class='text-xl font-bold'>30 a 60 dias ap&#243;s a rece&#231;&#227;o das faturas, que s&#243; podem ser emitidas ap&#243;s o vencimento da obriga&#231;&#227;o respectiva.</p></div>
             </div>
             <div class='overflow-hidden rounded-xl border border-red-200 shadow-sm'>
                 <div class='bg-red-600 px-4 py-3 text-white'><h3 class='font-bold text-sm uppercase'>Escalonamento de Penalidades</h3></div>
@@ -129,27 +124,27 @@
                     <thead class='bg-red-50 text-red-800'><tr><th class='px-4 py-3 font-semibold'>Gravidade</th><th class='px-4 py-3 font-semibold'>Exemplos</th><th class='px-4 py-3 font-semibold'>Coima Direta</th><th class='px-4 py-3 font-semibold'>Compulsória (Dia)</th></tr></thead>
                     <tbody class='divide-y divide-gray-200 bg-white'>
                         <tr>
-                            <td class='px-4 py-3'><span class='bg-red-600 text-white px-2 py-1 rounded text-xs font-bold uppercase'>Grave (Geral)</span></td>
-                            <td class='px-4 py-3 text-gray-600'>Incumprimento de obriga&#231;&#245;es contratuais</td>
-                            <td class='px-4 py-3 font-semibold'>At&#233; 20% do pre&#231;o contratual</td>
+                            <td class='px-4 py-3'><span class='bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs font-bold uppercase'>Leve/Moderado</span></td>
+                            <td class='px-4 py-3 text-gray-600'>Incumprimento de obriga&#231;&#245;es contratuais.</td>
+                            <td class='px-4 py-3 font-semibold'>At&#233; 20% do pre&#231;o contratual.</td>
                             <td class='px-4 py-3 text-gray-400'>N/A</td>
                         </tr>
                         <tr>
-                            <td class='px-4 py-3'><span class='bg-red-600 text-white px-2 py-1 rounded text-xs font-bold uppercase'>Muito Grave (Resolu&#231;&#227;o)</span></td>
-                            <td class='px-4 py-3 text-gray-600'>Resolu&#231;&#227;o do contrato por incumprimento do prestador</td>
-                            <td class='px-4 py-3 font-semibold'>At&#233; 30% do pre&#231;o contratual</td>
+                            <td class='px-4 py-3'><span class='bg-red-600 text-white px-2 py-1 rounded text-xs font-bold uppercase'>Grave</span></td>
+                            <td class='px-4 py-3 text-gray-600'>Resolu&#231;&#227;o do contrato por incumprimento do prestador de servi&#231;os.</td>
+                            <td class='px-4 py-3 font-semibold'>At&#233; 30% do pre&#231;o contratual.</td>
                             <td class='px-4 py-3 text-gray-400'>N/A</td>
                         </tr>
                         <tr>
-                            <td class='px-4 py-3'><span class='bg-red-600 text-white px-2 py-1 rounded text-xs font-bold uppercase'>Leve/Grave (Espec&#237;fico)</span></td>
-                            <td class='px-4 py-3 text-gray-600'>Atraso no tempo m&#225;ximo de desloca&#231;&#227;o (urg&#234;ncia locais cr&#237;ticos)</td>
-                            <td class='px-4 py-3 font-semibold'>At&#233; 1/200 do pre&#231;o contratual, por cada hora de atraso</td>
+                            <td class='px-4 py-3'><span class='bg-red-600 text-white px-2 py-1 rounded text-xs font-bold uppercase'>Grave (Atraso Urg&#234;ncia)</span></td>
+                            <td class='px-4 py-3 text-gray-600'>Incumprimento do tempo m&#225;ximo de desloca&#231;&#227;o para Locais Cr&#237;ticos.</td>
+                            <td class='px-4 py-3 font-semibold'>At&#233; 1/200 do pre&#231;o contratual, por cada hora de atraso.</td>
                             <td class='px-4 py-3 text-gray-400'>N/A</td>
                         </tr>
                         <tr>
-                            <td class='px-4 py-3'><span class='bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs font-bold uppercase'>Leve (Espec&#237;fico)</span></td>
-                            <td class='px-4 py-3 text-gray-600'>Atraso no tempo m&#225;ximo de desloca&#231;&#227;o (urg&#234;ncia restantes locais)</td>
-                            <td class='px-4 py-3 font-semibold'>At&#233; 1/600 do pre&#231;o contratual, por cada hora de atraso</td>
+                            <td class='px-4 py-3'><span class='bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs font-bold uppercase'>Moderado (Atraso Urg&#234;ncia)</span></td>
+                            <td class='px-4 py-3 text-gray-600'>Incumprimento do tempo m&#225;ximo de desloca&#231;&#227;o para Restantes Locais.</td>
+                            <td class='px-4 py-3 font-semibold'>At&#233; 1/600 do pre&#231;o contratual, por cada hora de atraso.</td>
                             <td class='px-4 py-3 text-gray-400'>N/A</td>
                         </tr>
                     </tbody>
@@ -165,38 +160,48 @@
                 <div class='risk-high p-6 rounded-r-xl'>
                     <div class='flex items-center mb-3'>
                         <i class='fas fa-exclamation-triangle text-red-600 mr-2'></i>
-                        <h3 class='font-bold text-red-800 uppercase text-sm tracking-wide'>Incumprimento de Resposta Cr&#237;tica</h3>
+                        <h3 class='font-bold text-red-800 uppercase text-sm tracking-wide'>Risco de Interrup&#231;&#227;o do Servi&#231;o (SMCB)</h3>
                     </div>
-                    <p class='text-sm text-gray-700'>Atrasos na desloca&#231;&#227;o da equipa em situa&#231;&#245;es de urg&#234;ncia para locais cr&#237;ticos (6.2 a) acarretam san&#231;&#245;es hor&#225;rias elevadas e indicam falha no servi&#231;o essencial, podendo levar &#224; resolu&#231;&#227;o contratual.</p>
+                    <p class='text-sm text-gray-700'>O contrato cessa ao atingir o valor de 28.000,00€, independentemente de ter decorrido o prazo m&#225;ximo de 730 dias. Isto pode levar &#224; interrup&#231;&#227;o da manuten&#231;&#227;o e &#224; necessidade de um novo procedimento em caso de gastos intensivos iniciais.</p>
                 </div>
                 <div class='risk-high p-6 rounded-r-xl'>
                     <div class='flex items-center mb-3'>
                         <i class='fas fa-exclamation-triangle text-red-600 mr-2'></i>
-                        <h3 class='font-bold text-red-800 uppercase text-sm tracking-wide'>Viola&#231;&#227;o Grave de Obriga&#231;&#245;es</h3>
+                        <h3 class='font-bold text-red-800 uppercase text-sm tracking-wide'>Risco de Resolu&#231;&#227;o por Falta de Pagamento (Prestador)</h3>
                     </div>
-                    <p class='text-sm text-gray-700'>Qualquer viola&#231;&#227;o grave ou reiterada de obriga&#231;&#245;es, nomeadamente falhas que comprometam o funcionamento normal das instala&#231;&#245;es, faculta ao contraente p&#250;blico o direito de resolu&#231;&#227;o sancionat&#243;ria e aplica&#231;&#227;o de multas at&#233; 30%.</p>
+                    <p class='text-sm text-gray-700'>O prestador de servi&#231;os s&#243; pode resolver o contrato por falta de pagamento se o montante em d&#237;vida exceder 25% do pre&#231;o contratual OU se o pagamento estiver em atraso h&#225; mais de 180 dias. Isto imp&#245;e um longo per&#237;odo de exposi&#231;&#227;o financeira ao prestador.</p>
                 </div>
                 <div class='risk-low p-6 rounded-r-xl'>
                     <div class='flex items-center mb-3'>
                         <i class='fas fa-check-circle text-green-600 mr-2'></i>
-                        <h3 class='font-bold text-green-800 uppercase text-sm tracking-wide'>Atraso de Pagamento da Entidade</h3>
+                        <h3 class='font-bold text-green-800 uppercase text-sm tracking-wide'>Risco de Invalida&#231;&#227;o de &#39;For&#231;a Maior&#39;</h3>
                     </div>
-                    <p class='text-sm text-gray-700'>O prestador de servi&#231;os s&#243; pode resolver o contrato por falta de pagamento se o montante em d&#237;vida for superior a 180 dias OU exceder 25% do pre&#231;o contratual, fornecendo uma margem de seguran&#231;a alargada para o contraente p&#250;blico.</p>
-                </div>
-                <div class='risk-low p-6 rounded-r-xl'>
-                    <div class='flex items-center mb-3'>
-                        <i class='fas fa-check-circle text-green-600 mr-2'></i>
-                        <h3 class='font-bold text-green-800 uppercase text-sm tracking-wide'>Eventos de For&#231;a Maior</h3>
-                    </div>
-                    <p class='text-sm text-gray-700'>Ocorrendo circunst&#226;ncias de for&#231;a maior (como desastres naturais ou determina&#231;&#245;es governamentais n&#227;o sancionat&#243;rias), as penalidades s&#227;o isentas e os prazos s&#227;o prorrogados, mitigando o risco de incumprimento involunt&#225;rio.</p>
+                    <p class='text-sm text-gray-700'>O caderno de encargos especifica detalhadamente o que &#39;n&#227;o constitui&#39; for&#231;a maior (ex: greves internas, avarias n&#227;o devidas a sabotagem, eventos cobertos por seguros), reduzindo a margem para o prestador se eximir a responsabilidades por falhas operacionais previs&#237;veis.</p>
                 </div>
             </div>
             <div class='mt-8 bg-slate-100 p-8 rounded-2xl border border-slate-200'>
                 <h3 class='text-lg font-bold mb-3'>Conclusão Final</h3>
-                <p class='text-sm text-gray-600'>O contrato estabelece um prazo fixo de 730 dias ou at&#233; esgotar o valor base. As regras de execu&#231;&#227;o s&#227;o estritas, exigindo aprova&#231;&#227;o pr&#233;via de or&#231;amentos para cada interven&#231;&#227;o e impondo penalidades rigorosas, especialmente em caso de atraso na resposta a situa&#231;&#245;es de urg&#234;ncia, refletindo a criticidade dos sistemas AVAC e AQS para a opera&#231;&#227;o dos servi&#231;os municipalizados.</p>
+                <p class='text-sm text-gray-600'>O procedimento estabelece um contrato de manuten&#231;&#227;o de servi&#231;os essenciais, de m&#233;dio prazo (2 anos), mas limitado pelo valor base global de 28.000,00€. O pre&#231;o &#233; pago mediante faturas referentes a servi&#231;os realizados e or&#231;amentos previamente aprovados. O regime de penalidades &#233; detalhado, com forte enfoque no tempo de resposta a situa&#231;&#245;es de urg&#234;ncia, indicando a criticidade da prontid&#227;o operacional.</p>
             </div>
         </section>
     </main>
     <footer class='bg-white border-t border-gray-200 py-6 text-center text-gray-400 text-xs'>Análise gerada para uso técnico e consultoria jurídica. Todos os direitos reservados.</footer>
+<script>
+VANTA.WAVES({
+  el: '#vanta-bg',
+  mouseControls: false,
+  touchControls: false,
+  gyroControls: false,
+  minHeight: 300.0,
+  minWidth: 200.0,
+  scale: 1.0,
+  scaleMobile: 1.0,
+  color: 0x1e3a8a,
+  shininess: 35,
+  waveHeight: 20,
+  waveSpeed: 0.6,
+  zoom: 0.85
+});
+</script>
 </body>
 </html>
