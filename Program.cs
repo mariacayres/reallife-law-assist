@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
 using RealLifeLawAssist.Configuration;
@@ -15,9 +14,10 @@ try
     using var geminiService = new GeminiService();
     var pdfReaderService = new PdfReaderService();
     var pdfOutputService = new PdfService();
+    var htmlWriterService = new HtmlWriterService();
     var config = new ConfigEnv();
 
-    // Pasta onde os PDFs de saída serão salvos
+    // Pasta onde os outputs serão salvos
     var outputDir = Path.Combine(Directory.GetCurrentDirectory(), "consolidado");
     Directory.CreateDirectory(outputDir);
 
@@ -31,37 +31,33 @@ try
 
     string jsonInstruction =
         @"
-    Analise o documento e responda ESTRITAMENTE com um JSON válido (sem markdown ```json) seguindo esta estrutura:
-    {
-        ""titulo"": ""Titulo do Relatório"",
-        ""descricao"": ""Resumo executivo curto"",
-        ""objeto"": ""Descrição do objeto do contrato"",
-        ""localizacao"": ""Locais de execução"",
-        ""totalLinhas"": ""Ex: 12 circuitos"",
-        ""precoBase"": 0.0,
-        ""custoKm"": 0.0,
-        ""kmMax"": 0.0,
-        ""vigencia"": ""Ex: 60 dias"",
-        ""caucao"": ""Ex: 5%"",
-        ""pagamento"": ""Ex: 30 dias"",
-        ""conclusao"": ""Texto da conclusão final"",
-        ""clausulasFixas"": [ { ""area"": ""Ex: Frota"", ""clausula"": ""Art. 5"", ""requisito"": ""Descrição"" } ],
-        ""aspetosVariaveis"": [ { ""titulo"": ""Ex: Preço"", ""descricao"": ""Critério"" } ],
-        ""penalidades"": [ { ""nivel"": ""Leve/Grave"", ""exemplos"": ""Atraso"", ""coima"": ""Valor"", ""compulsoria"": ""Valor"" } ],
-        ""riscos"": [ { ""tipo"": ""Alto/Baixo"", ""titulo"": ""Titulo"", ""descricao"": ""Descrição"" } ]
-    }";
+Analise o documento e responda ESTRITAMENTE com um JSON válido (sem markdown) seguindo esta estrutura:
+{
+    ""titulo"": ""Titulo do Relatório"",
+    ""descricao"": ""Resumo executivo curto"",
+    ""objeto"": ""Descrição do objeto do contrato"",
+    ""localizacao"": ""Locais de execução"",
+    ""totalLinhas"": ""Ex: 12 circuitos"",
+    ""precoBase"": 0.0,
+    ""custoKm"": 0.0,
+    ""kmMax"": 0.0,
+    ""vigencia"": ""Ex: 60 dias"",
+    ""caucao"": ""Ex: 5%"",
+    ""pagamento"": ""Ex: 30 dias"",
+    ""conclusao"": ""Texto da conclusão final"",
+    ""clausulasFixas"": [ { ""area"": ""Ex: Frota"", ""clausula"": ""Art. 5"", ""requisito"": ""Descrição"" } ],
+    ""aspetosVariaveis"": [ { ""titulo"": ""Ex: Preço"", ""descricao"": ""Critério"" } ],
+    ""penalidades"": [ { ""nivel"": ""Leve/Grave"", ""exemplos"": ""Atraso"", ""coima"": ""Valor"", ""compulsoria"": ""Valor"" } ],
+    ""riscos"": [ { ""tipo"": ""Alto/Baixo"", ""titulo"": ""Titulo"", ""descricao"": ""Descrição"" } ]
+}";
 
     string prompt;
 
     if (config.Validating)
     {
         prompt =
-            "1. Estrutura Obrigatória: Definição clara do objeto e fixação do Preço Base (limite máximo). "
-            + "Distinção entre cláusulas fixas (adesão obrigatória) e aspetos variáveis (sujeitos à concorrência/avaliação). "
-            + "Definição das regras de execução: prazos, garantias e penalidades por incumprimento. "
-            + "2. Critérios de Avaliação de Risco: "
-            + "Risco Alto (Nota 1-2) - Indícios de Favorecimento. "
-            + "Risco Baixo (Nota 4-5) - Boas Práticas.";
+            "Estrutura obrigatória do procedimento, distinção entre cláusulas fixas e aspetos variáveis, "
+            + "regras de execução, penalidades e avaliação de risco (alto vs baixo).";
     }
     else
     {
@@ -91,21 +87,16 @@ try
                 continue;
             }
 
-            var analysis = await geminiService.GenerateContentAsync(pdfText, fullPrompt);
+            var analysisJson = await geminiService.GenerateContentAsync(pdfText, fullPrompt);
 
             Console.WriteLine("\n--- RESPOSTA DO GEMINI ---\n");
-            Console.WriteLine(analysis);
-
-            // --- 4. GERAR PDF DE SAÍDA ---
-            var fileName = Path.GetFileNameWithoutExtension(pdfPath);
-            var outputPdfPath = Path.Combine(outputDir, $"{fileName}_analise.pdf");
+            Console.WriteLine(analysisJson);
 
             AnaliseDados dados;
-
             try
             {
                 dados = JsonSerializer.Deserialize<AnaliseDados>(
-                    analysis,
+                    analysisJson,
                     new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
                 )!;
             }
@@ -116,9 +107,18 @@ try
                 continue;
             }
 
+            // --- 4. Geração dos Outputs ---
+            var fileName = Path.GetFileNameWithoutExtension(pdfPath);
+
+            var outputPdfPath = Path.Combine(outputDir, $"{fileName}_analise.pdf");
+            var outputHtmlPath = Path.Combine(outputDir, $"{fileName}_analise.html");
+
             pdfOutputService.CreateAnalysisPdf(outputPdfPath, Path.GetFileName(pdfPath), dados);
 
-            Console.WriteLine($"PDF de análise gerado: {outputPdfPath}");
+            htmlWriterService.CreateAnalysisHtml(outputHtmlPath, Path.GetFileName(pdfPath), dados);
+
+            Console.WriteLine($"✔ PDF gerado:  {outputPdfPath}");
+            Console.WriteLine($"✔ HTML gerado: {outputHtmlPath}");
         }
         catch (Exception exPdf)
         {
