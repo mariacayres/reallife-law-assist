@@ -48,7 +48,7 @@ Links diretos para cada relatório individual
 Entrada
 O utilizador fornece o caminho para um ficheiro PDF.
 
-![Dashboard consolidado](law-assist/docs/images/Captura de ecrã 2026-02-02 153947)
+![Dashboard consolidado](docs/images/Captura%20de%20ecrã%202026-02-02%20153947.png)
 
 Análise por IA
 O documento é analisado com base em critérios de transparência e concorrência.
