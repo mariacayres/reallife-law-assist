@@ -48,7 +48,7 @@ Links diretos para cada relatório individual
 Entrada
 O utilizador fornece o caminho para um ficheiro PDF.
 
-![Dashboard consolidado](docs/images/pdf1.png)
+![Dashboard consolidado](law-assist/docs/images/pdf1.png)
 
 Análise por IA
 O documento é analisado com base em critérios de transparência e concorrência.
