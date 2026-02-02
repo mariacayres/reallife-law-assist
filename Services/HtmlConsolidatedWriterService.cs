@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Text;
 using RealLifeLawAssist.Models;
@@ -9,100 +10,196 @@ namespace RealLifeLawAssist.Services
 {
     public class HtmlConsolidatedWriterService
     {
-        public void CreateConsolidatedHtml(string outputPath, List<AnaliseConsolidadaItem> itens)
+        // ================= NORMALIZAÇÃO =================
+        private static string Normalizar(string texto)
         {
+            if (string.IsNullOrWhiteSpace(texto)) return "";
+
+            var normalized = texto.Normalize(System.Text.NormalizationForm.FormD);
             var sb = new StringBuilder();
 
-            string dataHoraGeracao = DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss");
+            foreach (var c in normalized)
+            {
+                if (System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c)
+                    != System.Globalization.UnicodeCategory.NonSpacingMark)
+                {
+                    sb.Append(c);
+                }
+            }
 
-            sb.AppendLine("<!DOCTYPE html>");
-            sb.AppendLine("<html lang='pt-pt'>");
-            sb.AppendLine("<head>");
-            sb.AppendLine("    <meta charset='UTF-8'>");
-            sb.AppendLine("    <meta name='viewport' content='width=device-width, initial-scale=1.0'>");
-            sb.AppendLine("    <title>Relatório Consolidado de Riscos</title>");
-            sb.AppendLine("    <script src='https://cdn.tailwindcss.com'></script>");
-            sb.AppendLine("    <script src='https://cdnjs.cloudflare.com/ajax/libs/three.js/r121/three.min.js'></script>");
-            sb.AppendLine("    <script src='https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.waves.min.js'></script>");
-            sb.AppendLine("    <style>");
-            sb.AppendLine("        body { font-family: Arial, sans-serif; background: #f8fafc; }");
-            sb.AppendLine("        .alto { color: red; font-weight: bold; }");
-            sb.AppendLine("        .medio { color: orange; }");
-            sb.AppendLine("        .baixo { color: green; }");
-            sb.AppendLine("        table { border-collapse: collapse; width: 100%; margin-top: 1rem; }");
-            sb.AppendLine("        th, td { border: 1px solid #ccc; padding: 8px; }");
-            sb.AppendLine("        th { background: #eee; }");
-            sb.AppendLine("        header h1 { text-shadow: 1px 1px 4px rgba(0,0,0,0.3); }");
-            sb.AppendLine("    </style>");
-            sb.AppendLine("</head>");
-            sb.AppendLine("<body>");
+            return sb.ToString().ToLowerInvariant();
+        }
 
-            // Header moderno com flexbox
-            sb.AppendLine("    <header id='vanta-bg' class='relative overflow-hidden'>");
-            sb.AppendLine("        <div class='max-w-6xl mx-auto flex items-center justify-between py-6 px-6'>");
-            sb.AppendLine("            <!-- Logo à esquerda -->");
-            sb.AppendLine("            <div class='flex items-center space-x-4'>");
-            sb.AppendLine("                <img src='../img/logo.png' alt='Logo' class='h-12' />");
-            sb.AppendLine("                <span class='text-white font-bold text-lg'>RealLife Law Assist</span>");
-            sb.AppendLine("            </div>");
-            sb.AppendLine("            <!-- Data/hora à direita -->");
-            sb.AppendLine($"            <div class='text-white text-sm'>Gerado em: {dataHoraGeracao}</div>");
-            sb.AppendLine("        </div>");
-            sb.AppendLine("        <!-- Título centralizado abaixo do header principal -->");
-            sb.AppendLine("        <div class='text-center py-8'>");
-            sb.AppendLine("            <h1 class='text-3xl md:text-4xl font-bold text-white'>Relatório Consolidado de Riscos</h1>");
-            sb.AppendLine("        </div>");
-            sb.AppendLine("    </header>");
+        // ================= HTML CONSOLIDADO =================
+        public void CreateConsolidatedHtml(
+            string outputPath,
+            List<AnaliseConsolidadaItem> itens)
+        {
+            var htmlContent = new StringBuilder();
+            var dataProcessamento = DateTime.Now.ToString("dd/MM/yyyy HH:mm");
 
-            // Tabela de riscos
-            sb.AppendLine("    <main class='max-w-6xl mx-auto py-10 px-6'>");
-            sb.AppendLine("        <table class='shadow-lg'>");
-            sb.AppendLine("            <tr class='bg-gray-200'>");
-            sb.AppendLine("                <th>Arquivo</th>");
-            sb.AppendLine("                <th>Título</th>");
-            sb.AppendLine("                <th>Score de Risco</th>");
-            sb.AppendLine("                <th>Riscos Identificados</th>");
-            sb.AppendLine("            </tr>");
+            // ================= MÉTRICAS =================
+            int riscoAlto = 0, riscoMedio = 0, riscoBaixo = 0;
 
             foreach (var item in itens)
             {
-                sb.AppendLine("            <tr>");
-                sb.AppendLine($"                <td>{WebUtility.HtmlEncode(item.Arquivo)}</td>");
-                sb.AppendLine($"                <td>{WebUtility.HtmlEncode(item.Titulo)}</td>");
-                sb.AppendLine($"                <td>{item.ScoreRisco}</td>");
-                sb.AppendLine("                <td>");
-                foreach (var risco in item.Riscos)
+                foreach (var r in item.Riscos)
                 {
-                    string css = risco.Tipo?.ToLower() switch
-                    {
-                        "alto" => "alto",
-                        "medio" => "medio",
-                        "baixo" => "baixo",
-                        _ => "baixo"
-                    };
-                    sb.AppendLine($"<div class='{css}'>{WebUtility.HtmlEncode(risco.Tipo)} - {WebUtility.HtmlEncode(risco.Titulo)}</div>");
+                    var tipo = Normalizar(r.Tipo);
+
+                    if (tipo.Contains("alto")) riscoAlto++;
+                    else if (tipo.Contains("medio")) riscoMedio++;
+                    else if (tipo.Contains("baixo")) riscoBaixo++;
                 }
-                sb.AppendLine("                </td>");
-                sb.AppendLine("            </tr>");
             }
 
-            sb.AppendLine("        </table>");
-            sb.AppendLine("    </main>");
+            // ================= HTML =================
+            htmlContent.AppendLine("<!DOCTYPE html>");
+            htmlContent.AppendLine("<html lang='pt-pt'>");
+            htmlContent.AppendLine("<head>");
+            htmlContent.AppendLine("  <meta charset='UTF-8'>");
+            htmlContent.AppendLine("  <meta name='viewport' content='width=device-width, initial-scale=1.0'>");
+            htmlContent.AppendLine("  <title>Dashboard Consolidado de Risco</title>");
+            htmlContent.AppendLine("  <script src='https://cdn.tailwindcss.com'></script>");
+            htmlContent.AppendLine("  <script src='https://cdn.jsdelivr.net/npm/chart.js'></script>");
+            htmlContent.AppendLine("  <script src='https://cdnjs.cloudflare.com/ajax/libs/three.js/r121/three.min.js'></script>");
+            htmlContent.AppendLine("  <script src='https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.waves.min.js'></script>");
+            htmlContent.AppendLine("</head>");
 
-            // Footer
-            sb.AppendLine("    <footer class='text-center mt-10 mb-6 text-gray-600 text-sm'>");
-            sb.AppendLine("        Relatório gerado automaticamente. Todos os direitos reservados © 2026");
-            sb.AppendLine("    </footer>");
+            htmlContent.AppendLine("<body class='bg-gray-50 text-gray-900'>");
 
-            // Script Vanta
-            sb.AppendLine("<script>");
-            sb.AppendLine("VANTA.WAVES({ el: '#vanta-bg', mouseControls: false, touchControls: false, gyroControls: false, minHeight: 200.0, minWidth: 200.0, scale: 1.0, scaleMobile: 1.0, color: 0x1e3a8a, shininess: 35, waveHeight: 20, waveSpeed: 0.6, zoom: 0.85 });");
-            sb.AppendLine("</script>");
+            // ================= HEADER =================
+            htmlContent.AppendLine(
+                "<header id='vanta-bg' style='background-color:#1e3a8a' class='text-white py-14 px-6 relative overflow-hidden'>");
+            htmlContent.AppendLine("  <div class='max-w-7xl mx-auto relative z-10'>");
+            htmlContent.AppendLine("    <h1 class='text-3xl font-bold'>Dashboard Consolidado de Risco Contratual</h1>");
+            htmlContent.AppendLine($"    <p class='text-blue-200 mt-2'>Processado em {dataProcessamento} · {itens.Count} documentos analisados</p>");
+            htmlContent.AppendLine("  </div>");
+            htmlContent.AppendLine("</header>");
 
-            sb.AppendLine("</body>");
-            sb.AppendLine("</html>");
+            // ================= MAIN =================
+            htmlContent.AppendLine("<main class='max-w-7xl mx-auto px-6 py-10 space-y-10'>");
 
-            File.WriteAllText(outputPath, sb.ToString(), Encoding.UTF8);
+            // ================= KPIs =================
+            htmlContent.AppendLine("<div class='grid md:grid-cols-4 gap-4'>");
+            htmlContent.AppendLine($"<div class='bg-white p-4 rounded-xl border'><p class='text-xs uppercase text-gray-500'>Documentos</p><p class='text-2xl font-bold'>{itens.Count}</p></div>");
+            htmlContent.AppendLine($"<div class='bg-white p-4 rounded-xl border'><p class='text-xs uppercase text-gray-500'>Risco Alto</p><p class='text-2xl font-bold text-red-600'>{riscoAlto}</p></div>");
+            htmlContent.AppendLine($"<div class='bg-white p-4 rounded-xl border'><p class='text-xs uppercase text-gray-500'>Risco Médio</p><p class='text-2xl font-bold text-amber-500'>{riscoMedio}</p></div>");
+            htmlContent.AppendLine($"<div class='bg-white p-4 rounded-xl border'><p class='text-xs uppercase text-gray-500'>Risco Baixo</p><p class='text-2xl font-bold text-green-600'>{riscoBaixo}</p></div>");
+            htmlContent.AppendLine("</div>");
+
+            // ================= GRÁFICO =================
+            htmlContent.AppendLine("<div class='bg-white p-6 rounded-xl border h-[360px]'>");
+            htmlContent.AppendLine("  <canvas id='graficoNivel' class='w-full h-full'></canvas>");
+            htmlContent.AppendLine("</div>");
+
+            // ================= FILTROS =================
+            htmlContent.AppendLine("<div class='flex flex-wrap gap-4'>");
+            htmlContent.AppendLine("<input id='filtroTexto' placeholder='Pesquisar...' onkeyup='aplicarFiltros()' class='p-2 border rounded-lg w-64' />");
+            htmlContent.AppendLine("<select id='filtroRisco' onchange='aplicarFiltros()' class='p-2 border rounded-lg'>");
+            htmlContent.AppendLine("<option value=''>Todos os riscos</option>");
+            htmlContent.AppendLine("<option value='alto'>Risco Alto</option>");
+            htmlContent.AppendLine("<option value='medio'>Risco Médio</option>");
+            htmlContent.AppendLine("<option value='baixo'>Risco Baixo</option>");
+            htmlContent.AppendLine("</select>");
+            htmlContent.AppendLine("</div>");
+
+            // ================= CARDS =================
+            htmlContent.AppendLine("<div class='grid md:grid-cols-3 gap-6'>");
+
+            foreach (var item in itens)
+            {
+                var nivel =
+                    item.ScoreRisco >= 8 ? "alto" :
+                    item.ScoreRisco >= 4 ? "medio" : "baixo";
+
+                bool temFavorecimento = item.Riscos.Any(r =>
+                    Normalizar(r.Titulo).Contains("favorecimento"));
+
+                htmlContent.AppendLine(
+                    $"<div class='bg-white p-6 rounded-xl border-l-4 {(nivel == "alto" ? "border-red-600" : nivel == "medio" ? "border-amber-500" : "border-green-600")} card' data-risco='{nivel}'>");
+
+                htmlContent.AppendLine($"<h3 class='font-bold text-lg mb-1'>{WebUtility.HtmlEncode(item.Titulo)}</h3>");
+                htmlContent.AppendLine($"<p class='text-sm text-gray-600 mb-2'>Score: <strong>{item.ScoreRisco}</strong></p>");
+
+                if (temFavorecimento)
+                    htmlContent.AppendLine("<span class='inline-block text-xs px-2 py-1 rounded bg-red-100 text-red-700 mr-1'>Possível Favorecimento</span>");
+
+                htmlContent.AppendLine("<details class='mt-3'>");
+                htmlContent.AppendLine("<summary class='cursor-pointer text-sm text-blue-600'>Ver riscos</summary>");
+                htmlContent.AppendLine("<ul class='mt-2 text-sm text-gray-600'>");
+
+                foreach (var r in item.Riscos)
+                    htmlContent.AppendLine($"<li>• {WebUtility.HtmlEncode(r.Titulo)}</li>");
+
+                htmlContent.AppendLine("</ul>");
+                htmlContent.AppendLine("</details>");
+
+                htmlContent.AppendLine(
+                    $"<a href='{item.OutputHtmlPath}' target='_blank' class='inline-block mt-4 text-blue-700 text-sm font-semibold'>Ver análise completa →</a>");
+
+                htmlContent.AppendLine("</div>");
+            }
+
+            htmlContent.AppendLine("</div>");
+            htmlContent.AppendLine("</main>");
+
+            // ================= FOOTER =================
+            htmlContent.AppendLine("<footer class='bg-white border-t py-6 text-center text-xs text-gray-400'>Dashboard técnico gerado para análise jurídica · RealLife Law Assist</footer>");
+
+            // ================= SCRIPTS =================
+            htmlContent.AppendLine("<script>");
+
+            htmlContent.AppendLine(@"
+                function aplicarFiltros() {
+                    const t = document.getElementById('filtroTexto').value.toLowerCase();
+                    const r = document.getElementById('filtroRisco').value;
+
+                    document.querySelectorAll('.card').forEach(c => {
+                        const okT = c.innerText.toLowerCase().includes(t);
+                        const okR = !r || c.dataset.risco === r;
+                        c.style.display = okT && okR ? 'block' : 'none';
+                    });
+                }
+            ");
+
+            htmlContent.AppendLine($@"
+                new Chart(document.getElementById('graficoNivel'), {{
+                    type: 'doughnut',
+                    data: {{
+                        labels: ['Alto', 'Médio', 'Baixo'],
+                        datasets: [{{
+                            data: [{riscoAlto}, {riscoMedio}, {riscoBaixo}],
+                            backgroundColor: ['#dc2626', '#f59e0b', '#16a34a']
+                        }}]
+                    }},
+                    options: {{ maintainAspectRatio: false }}
+                }});
+            ");
+
+            // ================= VANTA =================
+            htmlContent.AppendLine(@"
+                VANTA.WAVES({
+                    el: '#vanta-bg',
+                    mouseControls: false,
+                    touchControls: false,
+                    gyroControls: false,
+                    minHeight: 220.0,
+                    scale: 1.0,
+                    scaleMobile: 1.0,
+                    color: 0x1e3a8a,
+                    shininess: 35,
+                    waveHeight: 18,
+                    waveSpeed: 0.6,
+                    zoom: 0.85
+                });
+            ");
+
+            htmlContent.AppendLine("</script>");
+            htmlContent.AppendLine("</body>");
+            htmlContent.AppendLine("</html>");
+
+            File.WriteAllText(outputPath, htmlContent.ToString(), Encoding.UTF8);
         }
     }
 }
