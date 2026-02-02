@@ -27,11 +27,11 @@ PDF Relatório de Análise Técnica: Análise de risco do Caderno de Encargos AV
 ![Dashboard consolidado de risco](pdf2.png)
 
 HTML Consolidado: Dashboard geral com métricas, gráficos de risco e filtros.
-![Dashboard consolidado de risco](reallife-law-assist/screencapture-file-C-Users-utilizador-Desktop-reallife-law-assist-consolidado-relatorio-consolidado-html-2026-02-02-16_24_59.pdf)
+![Dashboard consolidado de risco](screencapture-file-C-Users-utilizador-Desktop-reallife-law-assist-consolidado-relatorio-consolidado-html-2026-02-02-16_24_59.pdf)
 
 
 HTML Individual: Relatório detalhado de cada documento analisado.
-![Dashboard consolidado de risco](reallife-law-assist/screencapture-file-C-Users-utilizador-Desktop-reallife-law-assist-consolidado-1-Caderno-de-encargos-21-2025-CP-analise-html-2026-02-02-16_25_18.pdf)
+![Dashboard consolidado de risco](screencapture-file-C-Users-utilizador-Desktop-reallife-law-assist-consolidado-1-Caderno-de-encargos-21-2025-CP-analise-html-2026-02-02-16_25_18.pdf)
 
 🧰 Tecnologias e Recursos
 
