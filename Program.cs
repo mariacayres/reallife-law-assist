@@ -29,6 +29,9 @@ try
         return;
     }
 
+    // Lista para o relatório consolidado
+    var consolidado = new List<AnaliseConsolidadaItem>();
+
     string jsonInstruction =
         @"
 Analise o documento e responda ESTRITAMENTE com um JSON válido (sem markdown) seguindo esta estrutura:
@@ -56,8 +59,8 @@ Analise o documento e responda ESTRITAMENTE com um JSON válido (sem markdown) s
     if (config.Validating)
     {
         prompt =
-            "Estrutura obrigatória do procedimento, distinção entre cláusulas fixas e aspetos variáveis, "
-            + "regras de execução, penalidades e avaliação de risco (alto vs baixo).";
+            "Estrutura obrigatória do procedimento, distinção entre cláusulas fixas e aspetos variáveis, " +
+            "regras de execução, penalidades e avaliação de risco (alto vs baixo).";
     }
     else
     {
@@ -73,7 +76,7 @@ Analise o documento e responda ESTRITAMENTE com um JSON válido (sem markdown) s
 
     string fullPrompt = $"{prompt}\n\n{jsonInstruction}";
 
-    // --- 3. Processamento ---
+    // --- 3. Processamento dos PDFs ---
     foreach (var pdfPath in pdfFiles)
     {
         try
@@ -88,9 +91,6 @@ Analise o documento e responda ESTRITAMENTE com um JSON válido (sem markdown) s
             }
 
             var analysisJson = await geminiService.GenerateContentAsync(pdfText, fullPrompt);
-
-            Console.WriteLine("\n--- RESPOSTA DO GEMINI ---\n");
-            Console.WriteLine(analysisJson);
 
             AnaliseDados dados;
             try
@@ -107,15 +107,36 @@ Analise o documento e responda ESTRITAMENTE com um JSON válido (sem markdown) s
                 continue;
             }
 
-            // --- 4. Geração dos Outputs ---
+            // 🔹 cálculo do score de risco
+            var scoreRisco = pdfOutputService.CalcularScoreRisco(dados);
+
+            // 🔹 adiciona ao consolidado
+            consolidado.Add(new AnaliseConsolidadaItem
+            {
+                Arquivo = Path.GetFileName(pdfPath),
+                Titulo = dados.Titulo,
+                Descricao = dados.Descricao,
+                ScoreRisco = scoreRisco,
+                Riscos = dados.Riscos ?? new List<Risco>()
+            });
+
+            // --- 4. Geração dos Outputs individuais ---
             var fileName = Path.GetFileNameWithoutExtension(pdfPath);
 
             var outputPdfPath = Path.Combine(outputDir, $"{fileName}_analise.pdf");
             var outputHtmlPath = Path.Combine(outputDir, $"{fileName}_analise.html");
 
-            pdfOutputService.CreateAnalysisPdf(outputPdfPath, Path.GetFileName(pdfPath), dados);
+            pdfOutputService.CreateAnalysisPdf(
+                outputPdfPath,
+                Path.GetFileName(pdfPath),
+                dados
+            );
 
-            htmlWriterService.CreateAnalysisHtml(outputHtmlPath, Path.GetFileName(pdfPath), dados);
+            htmlWriterService.CreateAnalysisHtml(
+                outputHtmlPath,
+                Path.GetFileName(pdfPath),
+                dados
+            );
 
             Console.WriteLine($"✔ PDF gerado:  {outputPdfPath}");
             Console.WriteLine($"✔ HTML gerado: {outputHtmlPath}");
@@ -124,6 +145,24 @@ Analise o documento e responda ESTRITAMENTE com um JSON válido (sem markdown) s
         {
             Console.WriteLine($"Erro ao processar {pdfPath}: {exPdf.Message}");
         }
+    }
+
+    // --- 5. Ordenar e gerar HTML consolidado ---
+    if (consolidado.Any())
+    {
+        var consolidadoOrdenado = consolidado
+            .OrderByDescending(c => c.ScoreRisco)
+            .ToList();
+
+        var consolidatedHtmlPath = Path.Combine(
+            outputDir,
+            "relatorio_consolidado.html"
+        );
+
+        var htmlConsolidatedWriterService = new HtmlConsolidatedWriterService();
+htmlConsolidatedWriterService.CreateConsolidatedHtml(consolidatedHtmlPath, consolidadoOrdenado);
+
+        Console.WriteLine($"✔ HTML consolidado gerado: {consolidatedHtmlPath}");
     }
 }
 catch (Exception ex)
