@@ -29,10 +29,10 @@ namespace RealLifeLawAssist.Services
                     "    <meta name='viewport' content='width=device-width, initial-scale=1.0'>"
                 );
                 htmlContent.AppendLine($"    <title>Análise Técnica - {originalFileName}</title>");
-                htmlContent.AppendLine("    <script src='https://cdn.tailwindcss.com'></script>");
-                htmlContent.AppendLine(
-                    "    <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'>"
-                );
+                htmlContent.AppendLine("    <script src='https://cdn.tailwindcss.com'></script>");htmlContent.AppendLine("    <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'>");
+                htmlContent.AppendLine("    <script src='https://cdnjs.cloudflare.com/ajax/libs/three.js/r121/three.min.js'></script>");
+                htmlContent.AppendLine("    <script src='https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.waves.min.js'></script>");
+                
                 htmlContent.AppendLine("    <style>");
                 htmlContent.AppendLine(
                     "        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');"
@@ -47,6 +47,8 @@ namespace RealLifeLawAssist.Services
                 htmlContent.AppendLine(
                     "        .risk-low { @apply border-l-4 border-green-500 bg-green-50; }"
                 );
+                htmlContent.AppendLine("        #vanta-bg > div { position: relative; z-index: 2; }");
+                htmlContent.AppendLine("        canvas { z-index: 1 !important; }");
                 htmlContent.AppendLine("    </style>");
                 htmlContent.AppendLine("</head>");
 
@@ -54,7 +56,7 @@ namespace RealLifeLawAssist.Services
 
                 // Header
                 htmlContent.AppendLine(
-                    "    <header class='bg-slate-900 text-white py-12 px-6 shadow-lg'>"
+                    "    <header id='vanta-bg' class='text-white py-16 px-6 shadow-lg relative overflow-hidden'>"
                 );
                 htmlContent.AppendLine("        <div class='max-w-5xl mx-auto'>");
                 htmlContent.AppendLine(
@@ -86,7 +88,7 @@ namespace RealLifeLawAssist.Services
                     "                <span class='bg-blue-600 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold'>1</span>"
                 );
                 htmlContent.AppendLine(
-                    "                <h2 class='text-2xl font-bold text-slate-800'>Objeto e Fixação do Preço Base</h2>"
+                    "                <h2 class='text-3xl font-bold text-slate-800'>Objeto e Fixação do Preço Base</h2>"
                 );
                 htmlContent.AppendLine("            </div>");
                 htmlContent.AppendLine("            <div class='grid md:grid-cols-2 gap-6'>");
@@ -120,18 +122,11 @@ namespace RealLifeLawAssist.Services
                 );
                 htmlContent.AppendLine("                    <div class='space-y-4'>");
                 htmlContent.AppendLine(
-                    $"                        <div><p class='text-xs text-blue-300 uppercase font-bold tracking-wider'>Preço Base (S/ IVA)</p><p class='text-2xl font-bold'>{data.PrecoBase.ToString("C", culture)}</p></div>"
+                    $"                        <div><p class='text-xs text-blue-300 uppercase font-bold tracking-wider'>Preço Base (S/ IVA)</p><p class='text-5xl font-bold'>{data.PrecoBase.ToString("C", culture)}</p></div>"
                 );
                 htmlContent.AppendLine(
                     "                        <div class='grid grid-cols-2 gap-4 border-t border-blue-800 pt-4 text-sm'>"
                 );
-                htmlContent.AppendLine(
-                    $"                            <div><p class='text-blue-300'>Custo Máx/Km</p><p class='font-bold'>{data.CustoKm.ToString("C", culture)}</p></div>"
-                );
-                htmlContent.AppendLine(
-                    $"                            <div><p class='text-blue-300'>Km Máximos</p><p class='font-bold'>{data.KmMax:N0} km</p></div>"
-                );
-                htmlContent.AppendLine("                        </div>");
                 htmlContent.AppendLine("                    </div>");
                 htmlContent.AppendLine("                </div>");
                 htmlContent.AppendLine("            </div>");
@@ -191,7 +186,7 @@ namespace RealLifeLawAssist.Services
                     "                <h3 class='font-bold text-amber-800 mb-4 flex items-center'><i class='fas fa-trophy mr-2'></i> Aspetos Variáveis (Fatores de Avaliação)</h3>"
                 );
                 htmlContent.AppendLine(
-                    "                <div class='grid md:grid-cols-2 lg:grid-cols-4 gap-4'>"
+                    "                <div class='grid md:grid-cols-2 lg:grid-cols-4 gap-3'>"
                 );
                 foreach (var item in data.AspetosVariaveis ?? new List<AspetoVariavel>())
                 {
@@ -336,6 +331,23 @@ namespace RealLifeLawAssist.Services
                 htmlContent.AppendLine(
                     "    <footer class='bg-white border-t border-gray-200 py-6 text-center text-gray-400 text-xs'>Análise gerada para uso técnico e consultoria jurídica. Todos os direitos reservados.</footer>"
                 );
+                htmlContent.AppendLine("<script>");
+                htmlContent.AppendLine("VANTA.WAVES({");
+                htmlContent.AppendLine("  el: '#vanta-bg',");
+                htmlContent.AppendLine("  mouseControls: false,");
+                htmlContent.AppendLine("  touchControls: false,");
+                htmlContent.AppendLine("  gyroControls: false,");
+                htmlContent.AppendLine("  minHeight: 300.0,");
+                htmlContent.AppendLine("  minWidth: 200.0,");
+                htmlContent.AppendLine("  scale: 1.0,");
+                htmlContent.AppendLine("  scaleMobile: 1.0,");
+                htmlContent.AppendLine("  color: 0x1e3a8a,") ;
+                htmlContent.AppendLine("  shininess: 35,");
+                htmlContent.AppendLine("  waveHeight: 20,");
+                htmlContent.AppendLine("  waveSpeed: 0.6,");
+                htmlContent.AppendLine("  zoom: 0.85");
+                htmlContent.AppendLine("});");
+                htmlContent.AppendLine("</script>");
                 htmlContent.AppendLine("</body>");
                 htmlContent.AppendLine("</html>");
 
