@@ -62,15 +62,18 @@ namespace RealLifeLawAssist.Services
             htmlContent.AppendLine("  <title>Dashboard Consolidado de Risco</title>");
             htmlContent.AppendLine("  <script src='https://cdn.tailwindcss.com'></script>");
             htmlContent.AppendLine("  <script src='https://cdn.jsdelivr.net/npm/chart.js'></script>");
+            htmlContent.AppendLine("  <script src='https://cdnjs.cloudflare.com/ajax/libs/three.js/r121/three.min.js'></script>");
+            htmlContent.AppendLine("  <script src='https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.waves.min.js'></script>");
             htmlContent.AppendLine("</head>");
 
             htmlContent.AppendLine("<body class='bg-gray-50 text-gray-900'>");
 
             // ================= HEADER =================
-            htmlContent.AppendLine("<header class='bg-slate-900 text-white py-10 px-6'>");
-            htmlContent.AppendLine("  <div class='max-w-7xl mx-auto'>");
+            htmlContent.AppendLine(
+                "<header id='vanta-bg' style='background-color:#1e3a8a' class='text-white py-14 px-6 relative overflow-hidden'>");
+            htmlContent.AppendLine("  <div class='max-w-7xl mx-auto relative z-10'>");
             htmlContent.AppendLine("    <h1 class='text-3xl font-bold'>Dashboard Consolidado de Risco Contratual</h1>");
-            htmlContent.AppendLine($"    <p class='text-slate-400 mt-2'>Processado em {dataProcessamento} · {itens.Count} documentos analisados</p>");
+            htmlContent.AppendLine($"    <p class='text-blue-200 mt-2'>Processado em {dataProcessamento} · {itens.Count} documentos analisados</p>");
             htmlContent.AppendLine("  </div>");
             htmlContent.AppendLine("</header>");
 
@@ -85,7 +88,7 @@ namespace RealLifeLawAssist.Services
             htmlContent.AppendLine($"<div class='bg-white p-4 rounded-xl border'><p class='text-xs uppercase text-gray-500'>Risco Baixo</p><p class='text-2xl font-bold text-green-600'>{riscoBaixo}</p></div>");
             htmlContent.AppendLine("</div>");
 
-            // ================= GRÁFICO ÚNICO =================
+            // ================= GRÁFICO =================
             htmlContent.AppendLine("<div class='bg-white p-6 rounded-xl border h-[360px]'>");
             htmlContent.AppendLine("  <canvas id='graficoNivel' class='w-full h-full'></canvas>");
             htmlContent.AppendLine("</div>");
@@ -149,32 +152,48 @@ namespace RealLifeLawAssist.Services
 
             htmlContent.AppendLine(@"
                 function aplicarFiltros() {
-                const t = document.getElementById('filtroTexto').value.toLowerCase();
-                const r = document.getElementById('filtroRisco').value;
+                    const t = document.getElementById('filtroTexto').value.toLowerCase();
+                    const r = document.getElementById('filtroRisco').value;
 
-                document.querySelectorAll('.card').forEach(c => {
-                    const okT = c.innerText.toLowerCase().includes(t);
-                    const okR = !r || c.dataset.risco === r;
-                    c.style.display = okT && okR ? 'block' : 'none';
-                });
+                    document.querySelectorAll('.card').forEach(c => {
+                        const okT = c.innerText.toLowerCase().includes(t);
+                        const okR = !r || c.dataset.risco === r;
+                        c.style.display = okT && okR ? 'block' : 'none';
+                    });
                 }
-                ");
+            ");
 
             htmlContent.AppendLine($@"
                 new Chart(document.getElementById('graficoNivel'), {{
-                type: 'doughnut',
-                data: {{
-                    labels: ['Alto', 'Médio', 'Baixo'],
-                    datasets: [{{
-                    data: [{riscoAlto}, {riscoMedio}, {riscoBaixo}],
-                    backgroundColor: ['#dc2626', '#f59e0b', '#16a34a']
-                    }}]
-                }},
-                options: {{
-                    maintainAspectRatio: false
-                }}
+                    type: 'doughnut',
+                    data: {{
+                        labels: ['Alto', 'Médio', 'Baixo'],
+                        datasets: [{{
+                            data: [{riscoAlto}, {riscoMedio}, {riscoBaixo}],
+                            backgroundColor: ['#dc2626', '#f59e0b', '#16a34a']
+                        }}]
+                    }},
+                    options: {{ maintainAspectRatio: false }}
                 }});
-                ");
+            ");
+
+            // ================= VANTA =================
+            htmlContent.AppendLine(@"
+                VANTA.WAVES({
+                    el: '#vanta-bg',
+                    mouseControls: false,
+                    touchControls: false,
+                    gyroControls: false,
+                    minHeight: 220.0,
+                    scale: 1.0,
+                    scaleMobile: 1.0,
+                    color: 0x1e3a8a,
+                    shininess: 35,
+                    waveHeight: 18,
+                    waveSpeed: 0.6,
+                    zoom: 0.85
+                });
+            ");
 
             htmlContent.AppendLine("</script>");
             htmlContent.AppendLine("</body>");
