@@ -1,21 +1,24 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Text;
 using RealLifeLawAssist.Models;
-using System.Globalization;
 
 namespace RealLifeLawAssist.Services
 {
     public class HtmlConsolidatedWriterService
     {
-        // Normaliza texto (remover acentos e minúsculas)
+        // ================= NORMALIZAÇÃO =================
+        // Método privado para normalizar texto: remove acentos e converte para minúsculas
         private static string Normalizar(string texto)
         {
             if (string.IsNullOrWhiteSpace(texto)) return "";
+
             var normalized = texto.Normalize(System.Text.NormalizationForm.FormD);
             var sb = new StringBuilder();
+
             foreach (var c in normalized)
             {
                 if (System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c)
@@ -24,191 +27,225 @@ namespace RealLifeLawAssist.Services
                     sb.Append(c);
                 }
             }
+
             return sb.ToString().ToLowerInvariant();
         }
 
-        public void CreateConsolidatedHtml(string outputPath, List<AnaliseConsolidadaItem> itens)
+        // ================= CLASSIFICAÇÃO DE RISCO =================
+        // Método para classificar o tipo de risco baseado no título normalizado
+        private static string ClassificarTipoRisco(string titulo)
         {
-            try
+            var t = Normalizar(titulo);
+
+            if (t.Contains("favorecimento")) return "Favorecimento";
+            if (t.Contains("preco")) return "Preço";
+            if (t.Contains("prazo")) return "Prazo";
+            if (t.Contains("penal")) return "Penalidades";
+            if (t.Contains("concorr")) return "Concorrência";
+
+            return "Outros";
+        }
+
+        // ================= HTML CONSOLIDADO =================
+        // Método público para criar um arquivo HTML consolidado com dashboard de riscos
+        public void CreateConsolidatedHtml(
+            string outputPath,
+            List<AnaliseConsolidadaItem> itens)
+        {
+            var htmlContent = new StringBuilder();
+            var dataProcessamento = DateTime.Now.ToString("dd/MM/yyyy HH:mm");
+
+            // ================= MÉTRICAS =================
+            // Inicializa contadores para níveis de risco e dicionário para tipos de risco
+            int riscoAlto = 0, riscoMedio = 0, riscoBaixo = 0;
+            var tiposRisco = new Dictionary<string, int>();
+
+            // Itera sobre os itens e riscos para calcular métricas
+            foreach (var item in itens)
             {
-                var htmlContent = new StringBuilder();
-                string dataProcessamento = DateTime.Now.ToString("dd/MM/yyyy HH:mm", new CultureInfo("pt-PT"));
-
-                int riscosAltos = 0;
-                int riscosMedios = 0;
-                int riscosBaixos = 0;
-
-                string consolidadoDir = Path.GetDirectoryName(outputPath) ?? ".";
-
-                // Contagem de riscos
-                foreach (var item in itens ?? new List<AnaliseConsolidadaItem>())
+                foreach (var r in item.Riscos)
                 {
-                    foreach (var r in item.Riscos ?? new List<RiscoItem>())
-                    {
-                        var tipo = Normalizar(r.Tipo ?? "");
-                        if (tipo.Contains("alto")) riscosAltos++;
-                        else if (tipo.Contains("medio")) riscosMedios++;
-                        else if (tipo.Contains("baixo")) riscosBaixos++;
-                    }
+                    var tipo = Normalizar(r.Tipo);
+
+                    if (tipo.Contains("alto")) riscoAlto++;
+                    else if (tipo.Contains("medio")) riscoMedio++;
+                    else if (tipo.Contains("baixo")) riscoBaixo++;
+
+                    var categoria = ClassificarTipoRisco(r.Titulo);
+                    tiposRisco[categoria] =
+                        tiposRisco.ContainsKey(categoria)
+                            ? tiposRisco[categoria] + 1
+                            : 1;
                 }
+            }
 
-                // HTML inicial
-                htmlContent.AppendLine("<!DOCTYPE html>");
-                htmlContent.AppendLine("<html lang='pt-pt'>");
-                htmlContent.AppendLine("<head>");
-                htmlContent.AppendLine("  <meta charset='UTF-8'>");
-                htmlContent.AppendLine("  <meta name='viewport' content='width=device-width, initial-scale=1.0'>");
-                htmlContent.AppendLine("  <title>Relatório Consolidado de Risco</title>");
-                htmlContent.AppendLine("  <script src='https://cdn.tailwindcss.com'></script>");
-                htmlContent.AppendLine("  <script src='https://cdnjs.cloudflare.com/ajax/libs/three.js/r121/three.min.js'></script>");
-                htmlContent.AppendLine("  <script src='https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.waves.min.js'></script>");
-                htmlContent.AppendLine("  <script src='https://cdn.jsdelivr.net/npm/chart.js'></script>");
-                htmlContent.AppendLine("  <style>");
-                htmlContent.AppendLine("    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');");
-                htmlContent.AppendLine("    body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }");
-                htmlContent.AppendLine("    .card { transition: transform 0.2s; }");
-                htmlContent.AppendLine("    .card:hover { transform: translateY(-4px); }");
-                htmlContent.AppendLine("  </style>");
-                htmlContent.AppendLine("</head>");
-                htmlContent.AppendLine("<body>");
+            // ================= JS ARRAYS =================
+            // Prepara arrays JavaScript para labels e valores dos tipos de risco
+            var jsTipoLabels = string.Join(",",
+                tiposRisco.Keys.Select(k => $"'{WebUtility.HtmlEncode(k)}'"));
 
-                // HEADER com VANTA
-                htmlContent.AppendLine("<header id='vanta-bg' class='text-white py-16 px-6 relative overflow-hidden'>");
-                htmlContent.AppendLine("  <div class='max-w-7xl mx-auto flex items-center justify-between mb-6'>");
-                htmlContent.AppendLine("    <div class='flex items-center space-x-4'>");
-                htmlContent.AppendLine("      <img src='../img/logo.png' class='h-12' alt='RealLife Law Assist' />");
-                htmlContent.AppendLine("      <span class='font-bold text-lg'>RealLife Law Assist</span>");
-                htmlContent.AppendLine("    </div>");
-                htmlContent.AppendLine($"    <div class='text-sm text-slate-300'>Processado em {dataProcessamento}</div>");
-                htmlContent.AppendLine("  </div>");
-                htmlContent.AppendLine("  <div class='text-center'>");
-                htmlContent.AppendLine("    <h1 class='text-3xl md:text-4xl font-bold tracking-tight'>Relatório Consolidado de Riscos</h1>");
-                htmlContent.AppendLine("  </div>");
-                htmlContent.AppendLine("</header>");
+            var jsTipoValues = string.Join(",",
+                tiposRisco.Values);
 
-                // MAIN
-                htmlContent.AppendLine("<main class='max-w-7xl mx-auto px-6 py-12 space-y-12'>");
+            // ================= HTML =================
+            // Inicia a construção do HTML
+            htmlContent.AppendLine("<!DOCTYPE html>");
+            htmlContent.AppendLine("<html lang='pt-pt'>");
+            htmlContent.AppendLine("<head>");
+            htmlContent.AppendLine("  <meta charset='UTF-8'>");
+            htmlContent.AppendLine("  <meta name='viewport' content='width=device-width, initial-scale=1.0'>");
+            htmlContent.AppendLine("  <title>Dashboard Consolidado de Risco</title>");
+            htmlContent.AppendLine("  <script src='https://cdn.tailwindcss.com'></script>");
+            htmlContent.AppendLine("  <script src='https://cdn.jsdelivr.net/npm/chart.js'></script>");
+            htmlContent.AppendLine("</head>");
 
-                // GRÁFICO
-                htmlContent.AppendLine("<section class='bg-white rounded-xl shadow-sm border border-gray-200 p-8'>");
-                htmlContent.AppendLine("  <h2 class='text-xl font-bold mb-6 text-slate-800'>Distribuição dos Riscos Identificados</h2>");
-                htmlContent.AppendLine("  <div class='max-w-md mx-auto'>");
-                htmlContent.AppendLine("    <canvas id='riskChart'></canvas>");
-                htmlContent.AppendLine("  </div>");
-                htmlContent.AppendLine("</section>");
+            htmlContent.AppendLine("<body class='bg-gray-50 text-gray-900'>");
 
-                // FILTRO
-                htmlContent.AppendLine("<section class='mb-6'>");
-                htmlContent.AppendLine("  <input id='filtro' placeholder='Filtrar por texto...' ");
-                htmlContent.AppendLine("         class='w-full md:w-1/2 p-3 border border-gray-300 rounded-lg shadow-sm' ");
-                htmlContent.AppendLine("         onkeyup='filtrar()' />");
-                htmlContent.AppendLine("</section>");
+            // ================= HEADER =================
+            // Adiciona cabeçalho com título e data de processamento
+            htmlContent.AppendLine("<header class='bg-slate-900 text-white py-10 px-6'>");
+            htmlContent.AppendLine("  <div class='max-w-7xl mx-auto'>");
+            htmlContent.AppendLine("    <h1 class='text-3xl font-bold'>Dashboard Consolidado de Risco Contratual</h1>");
+            htmlContent.AppendLine($"    <p class='text-slate-400 mt-2'>Processado em {dataProcessamento} · {itens.Count} documentos analisados</p>");
+            htmlContent.AppendLine("  </div>");
+            htmlContent.AppendLine("</header>");
 
-                // CARDS
-                htmlContent.AppendLine("<section class='grid md:grid-cols-2 lg:grid-cols-3 gap-6'>");
+            // ================= MAIN =================
+            // Inicia seção principal
+            htmlContent.AppendLine("<main class='max-w-7xl mx-auto px-6 py-10 space-y-10'>");
 
-                foreach (var item in itens ?? new List<AnaliseConsolidadaItem>())
-                {
-                    string nivelClasse =
-                        item.ScoreRisco >= 8 ? "border-red-500 bg-red-50" :
-                        item.ScoreRisco >= 4 ? "border-yellow-400 bg-yellow-50" :
-                        "border-green-500 bg-green-50";
+            // ================= KPIs =================
+            // Adiciona cartões com KPIs: documentos, riscos alto/médio/baixo
+            htmlContent.AppendLine("<div class='grid md:grid-cols-4 gap-4'>");
+            htmlContent.AppendLine($"<div class='bg-white p-4 rounded-xl border'><p class='text-xs uppercase text-gray-500'>Documentos</p><p class='text-2xl font-bold'>{itens.Count}</p></div>");
+            htmlContent.AppendLine($"<div class='bg-white p-4 rounded-xl border'><p class='text-xs uppercase text-gray-500'>Risco Alto</p><p class='text-2xl font-bold text-red-600'>{riscoAlto}</p></div>");
+            htmlContent.AppendLine($"<div class='bg-white p-4 rounded-xl border'><p class='text-xs uppercase text-gray-500'>Risco Médio</p><p class='text-2xl font-bold text-amber-500'>{riscoMedio}</p></div>");
+            htmlContent.AppendLine($"<div class='bg-white p-4 rounded-xl border'><p class='text-xs uppercase text-gray-500'>Risco Baixo</p><p class='text-2xl font-bold text-green-600'>{riscoBaixo}</p></div>");
+            htmlContent.AppendLine("</div>");
 
-                    htmlContent.AppendLine($"<div class='card bg-white rounded-xl shadow-sm border-l-4 {nivelClasse} p-6'>");
+            // ================= GRÁFICOS =================
+            // Adiciona seção com gráficos (canvas para Chart.js)
+            htmlContent.AppendLine("<div class='grid md:grid-cols-2 gap-6'>");
+            htmlContent.AppendLine("<div class='bg-white p-6 rounded-xl border'><canvas id='graficoNivel'></canvas></div>");
+            htmlContent.AppendLine("<div class='bg-white p-6 rounded-xl border'><canvas id='graficoTipo'></canvas></div>");
+            htmlContent.AppendLine("</div>");
 
-                    htmlContent.AppendLine("  <div class='flex justify-between items-start mb-2'>");
-                    htmlContent.AppendLine($"    <h3 class='font-bold text-slate-800 text-lg'>{WebUtility.HtmlEncode(item.Titulo ?? "")}</h3>");
-                    htmlContent.AppendLine($"    <span class='text-xl font-bold text-slate-700'>{item.ScoreRisco}</span>");
-                    htmlContent.AppendLine("  </div>");
+            // ================= FILTROS =================
+            // Adiciona controles de filtro: texto e risco
+            htmlContent.AppendLine("<div class='flex flex-wrap gap-4'>");
+            htmlContent.AppendLine("<input id='filtroTexto' placeholder='Pesquisar...' onkeyup='aplicarFiltros()' class='p-2 border rounded-lg w-64' />");
+            htmlContent.AppendLine("<select id='filtroRisco' onchange='aplicarFiltros()' class='p-2 border rounded-lg'>");
+            htmlContent.AppendLine("<option value=''>Todos os riscos</option>");
+            htmlContent.AppendLine("<option value='alto'>Risco Alto</option>");
+            htmlContent.AppendLine("<option value='medio'>Risco Médio</option>");
+            htmlContent.AppendLine("<option value='baixo'>Risco Baixo</option>");
+            htmlContent.AppendLine("</select>");
+            htmlContent.AppendLine("</div>");
 
-                    // BADGES
-                    htmlContent.AppendLine("  <div class='flex flex-wrap gap-2 mb-3'>");
-                    foreach (var badge in item.Badges ?? new List<string>())
-                    {
-                        htmlContent.AppendLine(
-                            $"    <span class='text-xs font-bold px-2 py-1 rounded bg-blue-100 text-blue-800'>{WebUtility.HtmlEncode(badge)}</span>");
-                    }
-                    htmlContent.AppendLine("  </div>");
+            // ================= CARDS =================
+            // Adiciona cartões para cada item analisado
+            htmlContent.AppendLine("<div class='grid md:grid-cols-3 gap-6'>");
 
-                    htmlContent.AppendLine($"  <p class='text-sm text-gray-600 mb-4'>{WebUtility.HtmlEncode(item.Descricao ?? "")}</p>");
+            foreach (var item in itens)
+            {
+                // Determina o nível de risco baseado no score
+                var nivel =
+                    item.ScoreRisco >= 8 ? "alto" :
+                    item.ScoreRisco >= 4 ? "medio" : "baixo";
 
-                    htmlContent.AppendLine("  <div class='space-y-1 text-xs text-gray-700'>");
-                    foreach (var r in item.Riscos ?? new List<RiscoItem>())
-                    {
-                        htmlContent.AppendLine(
-                            $"    <div>• <strong>{WebUtility.HtmlEncode(r.Tipo ?? "")}</strong> – {WebUtility.HtmlEncode(r.Titulo ?? "")}</div>");
-                    }
-                    htmlContent.AppendLine("  </div>");
+                // Verifica se há risco de favorecimento
+                bool temFavorecimento = item.Riscos.Any(r =>
+                    Normalizar(r.Titulo).Contains("favorecimento"));
 
-                    // LINK PARA HTML INDIVIDUAL (sempre visível)
-                    string relativePath = !string.IsNullOrWhiteSpace(item.HtmlPath)
-                        ? Path.GetRelativePath(consolidadoDir, item.HtmlPath).Replace("\\", "/")
-                        : "#";
+                // Adiciona cartão com detalhes do item
+                htmlContent.AppendLine(
+                    $"<div class='bg-white p-6 rounded-xl border-l-4 {(nivel == "alto" ? "border-red-600" : nivel == "medio" ? "border-amber-500" : "border-green-600")} card' data-risco='{nivel}'>");
 
-                    string linkClass = !string.IsNullOrWhiteSpace(item.HtmlPath)
-                        ? "text-blue-700 hover:underline"
-                        : "text-gray-400 cursor-not-allowed";
+                htmlContent.AppendLine($"<h3 class='font-bold text-lg mb-1'>{WebUtility.HtmlEncode(item.Titulo)}</h3>");
+                htmlContent.AppendLine($"<p class='text-sm text-gray-600 mb-2'>Score: <strong>{item.ScoreRisco}</strong></p>");
 
-                    htmlContent.AppendLine(
-                        $"  <a href='{WebUtility.HtmlEncode(relativePath)}' target='_blank' class='inline-block mt-4 text-sm font-semibold {linkClass}'>Ver análise completa →</a>");
+                if (temFavorecimento)
+                    htmlContent.AppendLine("<span class='inline-block text-xs px-2 py-1 rounded bg-red-100 text-red-700 mr-1'>Possível Favorecimento</span>");
 
-                    htmlContent.AppendLine("</div>");
-                }
+                htmlContent.AppendLine("<details class='mt-3'>");
+                htmlContent.AppendLine("<summary class='cursor-pointer text-sm text-blue-600'>Ver riscos</summary>");
+                htmlContent.AppendLine("<ul class='mt-2 text-sm text-gray-600'>");
 
-                htmlContent.AppendLine("</section>");
-                htmlContent.AppendLine("</main>");
+                foreach (var r in item.Riscos)
+                    htmlContent.AppendLine($"<li>• {WebUtility.HtmlEncode(r.Titulo)}</li>");
 
-                // FOOTER
-                htmlContent.AppendLine("<footer class='bg-white border-t border-gray-200 py-6 text-center text-gray-400 text-xs'>");
-                htmlContent.AppendLine($"Relatório consolidado gerado automaticamente em {dataProcessamento} | RealLife Law Assist");
-                htmlContent.AppendLine("</footer>");
+                htmlContent.AppendLine("</ul>");
+                htmlContent.AppendLine("</details>");
 
-                // SCRIPT FILTRO E GRÁFICO
-                htmlContent.AppendLine("<script>");
-                htmlContent.AppendLine("function filtrar() {");
-                htmlContent.AppendLine("  const q = document.getElementById('filtro').value.toLowerCase();");
-                htmlContent.AppendLine("  document.querySelectorAll('.card').forEach(c => {");
-                htmlContent.AppendLine("    c.style.display = c.innerText.toLowerCase().includes(q) ? 'block' : 'none';");
-                htmlContent.AppendLine("  });");
-                htmlContent.AppendLine("}");
-                htmlContent.AppendLine("new Chart(document.getElementById('riskChart'), {");
-                htmlContent.AppendLine("  type: 'doughnut',");
-                htmlContent.AppendLine("  data: {");
-                htmlContent.AppendLine("    labels: ['Risco Alto', 'Risco Médio', 'Risco Baixo'],");
-                htmlContent.AppendLine($"    datasets: [{{ data: [{riscosAltos}, {riscosMedios}, {riscosBaixos}], backgroundColor: ['#dc2626','#facc15','#16a34a'] }}]");
-                htmlContent.AppendLine("  },");
-                htmlContent.AppendLine("  options: { plugins: { legend: { position: 'bottom' } } }");
-                htmlContent.AppendLine("});");
+                htmlContent.AppendLine(
+                    $"<a href='{item.OutputHtmlPath}' target='_blank' class='inline-block mt-4 text-blue-700 text-sm font-semibold'>Ver análise completa →</a>");
 
-                // VANTA HEADER
-                htmlContent.AppendLine(@"
-VANTA.WAVES({
-  el: '#vanta-bg',
-  mouseControls: false,
-  touchControls: false,
-  gyroControls: false,
-  minHeight: 300.0,
-  minWidth: 200.0,
-  scale: 1.0,
-  scaleMobile: 1.0,
-  color: 0x1e3a8a,
-  shininess: 35,
-  waveHeight: 20,
-  waveSpeed: 0.6,
-  zoom: 0.85
-});
+                htmlContent.AppendLine("</div>");
+            }
+
+            htmlContent.AppendLine("</div>");
+            htmlContent.AppendLine("</main>");
+
+            // ================= FOOTER =================
+            // Adiciona rodapé
+            htmlContent.AppendLine("<footer class='bg-white border-t py-6 text-center text-xs text-gray-400'>Dashboard técnico gerado para análise jurídica · RealLife Law Assist</footer>");
+
+            // ================= SCRIPTS =================
+            // Adiciona scripts JavaScript para filtros e gráficos
+            htmlContent.AppendLine("<script>");
+
+            // Função para aplicar filtros nos cartões
+            htmlContent.AppendLine(@"
+function aplicarFiltros() {
+  const t = document.getElementById('filtroTexto').value.toLowerCase();
+  const r = document.getElementById('filtroRisco').value;
+
+  document.querySelectorAll('.card').forEach(c => {
+    const okT = c.innerText.toLowerCase().includes(t);
+    const okR = !r || c.dataset.risco === r;
+    c.style.display = okT && okR ? 'block' : 'none';
+  });
+}
 ");
 
-                htmlContent.AppendLine("</script>");
-                htmlContent.AppendLine("</body>");
-                htmlContent.AppendLine("</html>");
+            // Inicializa gráfico de níveis de risco
+            htmlContent.AppendLine($@"
+new Chart(document.getElementById('graficoNivel'), {{
+  type: 'doughnut',
+  data: {{
+    labels: ['Alto', 'Médio', 'Baixo'],
+    datasets: [{{
+      data: [{riscoAlto}, {riscoMedio}, {riscoBaixo}],
+      backgroundColor: ['#dc2626', '#f59e0b', '#16a34a']
+    }}]
+  }}
+}});
+");
 
-                File.WriteAllText(outputPath, htmlContent.ToString(), Encoding.UTF8);
-            }
-            catch (Exception ex)
-            {
-                throw new Exception($"Erro ao gerar HTML consolidado: {ex.Message}");
-            }
+            // Inicializa gráfico de tipos de risco
+            htmlContent.AppendLine($@"
+new Chart(document.getElementById('graficoTipo'), {{
+  type: 'bar',
+  data: {{
+    labels: [{jsTipoLabels}],
+    datasets: [{{
+      data: [{jsTipoValues}],
+      backgroundColor: '#2563eb'
+    }}]
+  }},
+  options: {{
+    plugins: {{ legend: {{ display: false }} }},
+    scales: {{ y: {{ beginAtZero: true, ticks: {{ stepSize: 1 }} }} }}
+  }}
+}});
+");
+
+            htmlContent.AppendLine("</script>");
+            htmlContent.AppendLine("</body>");
+            htmlContent.AppendLine("</html>");
+
+            // Escreve o conteúdo HTML no arquivo de saída
+            File.WriteAllText(outputPath, htmlContent.ToString(), Encoding.UTF8);
         }
     }
 }
