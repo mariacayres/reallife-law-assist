@@ -27,7 +27,6 @@ PDF Relatório de Análise Técnica: Análise de risco do Caderno de Encargos AV
 
 HTML Consolidado: Dashboard geral com métricas, gráficos de risco e filtros.
 
-![Dashboard consolidado de risco](docs/images/html-consolidado1.png)
 HTML Individual: Relatório detalhado de cada documento analisado.
 
 🧰 Tecnologias e Recursos
