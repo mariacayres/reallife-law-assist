@@ -23,13 +23,15 @@ Processamento: O software analisa o PDF, identifica riscos e calcula scores.
 Saída:
 
 PDF Relatório de Análise Técnica: Análise de risco do Caderno de Encargos AVAC/AQS do SMCB.
-
+![Dashboard consolidado de risco](pdf1.png)
+![Dashboard consolidado de risco](pdf2.png)
 
 HTML Consolidado: Dashboard geral com métricas, gráficos de risco e filtros.
+![Dashboard consolidado de risco](screencapture-file-C-Users-utilizador-Desktop-reallife-law-assist-consolidado-relatorio-consolidado-html-2026-02-02-16_24_59.pdf)
 
-![Dashboard consolidado de risco](html-consolidado1.png)
 
 HTML Individual: Relatório detalhado de cada documento analisado.
+![Dashboard consolidado de risco](screencapture-file-C-Users-utilizador-Desktop-reallife-law-assist-consolidado-1-Caderno-de-encargos-21-2025-CP-analise-html-2026-02-02-16_25_18.pdf)
 
 🧰 Tecnologias e Recursos
 
