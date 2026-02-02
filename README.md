@@ -48,7 +48,7 @@ Links diretos para cada relatório individual
 Entrada
 O utilizador fornece o caminho para um ficheiro PDF.
 
-![Dashboard consolidado](docs/images/Captura%20de%20ecrã%202026-02-02%20153947.png)
+![Dashboard consolidado](docs/images/pdf1.png)
 
 Análise por IA
 O documento é analisado com base em critérios de transparência e concorrência.
