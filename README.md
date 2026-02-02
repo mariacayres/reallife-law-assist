@@ -1,20 +1,18 @@
-Law Assist - Analista de Prevenção da Corrupção ⚖️
+# Law Assist - Analista de Prevenção da Corrupção ⚖️
 
-O Law Assist é uma ferramenta de auditoria inteligente desenvolvida em C# que utiliza o modelo Gemini 2.5 Flash para analisar editais, cadernos de encargos e documentos de contratação pública. O objetivo é identificar automaticamente cláusulas restritivas, indícios de direcionamento ou riscos de corrupção.
+O **Law Assist** é uma ferramenta de auditoria inteligente desenvolvida em **C#** que utiliza o modelo **Gemini 2.5 Flash** para analisar editais, cadernos de encargos e documentos de contratação pública. O objetivo é identificar automaticamente cláusulas restritivas, indícios de direcionamento ou riscos de corrupção.
 
-🚀 Funcionalidades
+## 🚀 Funcionalidades
 
-Análise Multimodal: Processamento direto de documentos PDF (Cadernos de Encargos).
-
-Detecção de Vícios: Identificação de especificações técnicas que limitam a concorrência.
-
-Relatório de Risco: Geração de parecer técnico pontuado de 1 a 5.
-
-Geração de HTMLs: Criação de dashboards consolidados e relatórios individuais em HTML.
-
-Integração com Portal BASE: Focado na estrutura de dados da contratação pública em Portugal.
-
-📂 Fluxo de Entrada e Saída
+-   **Análise Multimodal:** Processamento direto de documentos PDF (Cadernos de Encargos).
+    
+-   **Detecção de Vícios:** Identificação de especificações técnicas que limitam a concorrência.
+    
+-   **Relatório de Risco:** Geração de um parecer técnico pontuado de 1 a 5.
+    
+-   **Integração com Portal BASE:** Focado na estrutura de dados da contratação pública em Portugal.
+    
+## 📂 Fluxo de Entrada e Saída
 
 Entrada: Um ficheiro PDF com o Caderno de Encargos.
 
@@ -33,21 +31,25 @@ HTML Consolidado: Dashboard geral com métricas, gráficos de risco e filtros.
 HTML Individual: Relatório detalhado de cada documento analisado.
 ![Dashboard consolidado de risco](screencapture-file-C-Users-utilizador-Desktop-reallife-law-assist-consolidado-1-Caderno-de-encargos-21-2025-CP-analise-html-2026-02-02-16_25_18.pdf)
 
-🧰 Tecnologias e Recursos
+## 🚀 Tecnologias e Recursos
 
-Linguagem: C# (.NET)
+-   **Linguagem:** C# (.NET)
+    
+-   **IA:** Google Cloud Vertex AI (Modelo: `gemini-3-pro-preview`)
+    
+-   **API:** [C# Gemini API SDK](https://googleapis.github.io/dotnet-genai/ "null")
+    
+-   **Fontes de Dados:** [Portal BASE](https://www.google.com/search?q=https://www.base.gov.pt/Base4/pt/pesquisa/%3Ftype%3Danuncios "null")
 
-IA: Google Cloud Vertex AI (gemini-3-pro-preview)
+## 📦 Configuração Técnica
 
-API: C# Gemini API SDK
+Para utilizar o cliente da API no projeto, utilize a seguinte estrutura base:
 
-Fontes de Dados: Portal BASE
-
-📦 Configuração Técnica
+```
 // Configuração do Cliente
 var client = new Client(apiKey: "SUA_API_KEY");
 
-// Criar partes da mensagem (Texto + PDF)
+// 4. Criar as partes da mensagem (Texto + PDF)
 var parts = new List<Part> {
     new TextPart("Tu és um analista de documentação para a prevenção da corrupção..."),
     new InlineDataPart(pdfBytes, "application/pdf")
@@ -55,80 +57,106 @@ var parts = new List<Part> {
 
 Console.WriteLine("A processar o documento...");
 
-// Chamar a API
+// 5. Chamar a API
 var response = await client.GenerateContentAsync(parts);
 
-🔄 Fluxo do Programa
+```
+## 🔄 Fluxo do Programa
 
-Início: O programa inicializa as credenciais.
+1.  **Início:** O programa inicializa as credenciais.
+    
+2.  **Entrada:** Solicita ao utilizador o caminho para um ficheiro PDF (ex: Caderno de Encargos).
+    
+3.  **Análise:** Chama a API do Gemini enviando o documento e as instruções de sistema.
+    
+4.  **Saída:** Apresenta o relatório de riscos detalhado na consola.
 
-Entrada: Solicita ao utilizador o caminho para um ficheiro PDF.
+## 🧠 Instruções de Análise (Prompt de Sistema)
 
-Análise: Chama a API do Gemini enviando o PDF e instruções do sistema.
+O modelo está configurado para analisar os documentos com base nos seguintes pilares:
 
-Saída: Gera:
+### 1. Estrutura Obrigatória
 
-Relatório de risco na consola.
+-   **Objeto e Preço:** Definição clara do objeto e fixação do Preço Base.
+    
+-   **Cláusulas:** Distinção entre cláusulas fixas e aspetos variáveis sujeitos à concorrência.
+    
+-   **Execução:** Definição de prazos, garantias e penalidades claras.
+    
 
-HTML Consolidado: métricas, gráficos e filtros.
+### 2. Critérios de Avaliação de Risco
 
-HTML Individual: relatório detalhado por documento.
+Nível de Risco
 
-🧠 Instruções de Análise (Prompt de Sistema)
+Pontuação
 
-O modelo analisa os documentos com base em:
+Indicadores
 
-1. Estrutura Obrigatória
+🚩 **Alto**
 
-Objeto e Preço: Definição clara do objeto e fixação do Preço Base.
+1-2
 
-Cláusulas: Distinção entre cláusulas fixas e aspetos variáveis sujeitos à concorrência.
+Especificações "à medida" (ex: dimensões exatas sem motivo), prazos impossíveis, bloqueio de marcas sem menção a "ou equivalente".
 
-Execução: Prazos, garantias e penalidades claras.
+✅ **Baixo**
 
-2. Critérios de Avaliação de Risco
-Nível de Risco	Pontuação	Indicadores
-🚩 Alto	1-2	Especificações "à medida" (ex: dimensões exatas sem motivo), prazos impossíveis, bloqueio de marcas sem menção a "ou equivalente".
-✅ Baixo	4-5	Descritivos funcionais (focados no resultado), prazos realistas de mercado, regime de multas claro e dissuasor.
-🔧 Configuração e Execução
-Pré-requisitos
+4-5
 
-.NET SDK instalado
+Descritivos funcionais (focados no resultado), prazos realistas de mercado, regime de multas claro e dissuasor.
+## 🔧 Configuração e Execução
 
-API Key do Google AI Studio
+### Pré-requisitos
 
-Instalação
+-   .NET SDK instalado.
+    
+-   Uma API Key do Google AI Studio.
+    
 
-Clone o repositório:
+### Instalação
 
-git clone https://github.com/seu-usuario/law-assist.git
+1.  Clone o repositório:
+    
+    ```
+    git clone [https://github.com/seu-usuario/law-assist.git](https://github.com/seu-usuario/law-assist.git)
+    
+    ```
+    
+2.  Configure a sua chave de API nas variáveis de ambiente:
+    
+    ```
+    export GOOGLE_API_KEY="sua_chave_aqui"
+    
+    ```
+    
+3.  Execute o projeto:
+    
+    ```
+    dotnet run
+    
+    ```
+    
 
+## 📄 Exemplo de Prompt de Sistema
 
-Configure a sua chave de API:
+O software opera enviando o seguinte contexto para a IA:
 
-export GOOGLE_API_KEY="sua_chave_aqui"
+> "Tu és um analista jurídico especializado em prevenção da corrupção. Analisa este PDF e identifica se as cláusulas técnicas permitem a livre concorrência ou se estão desenhadas para um fornecedor específico. Atribui uma nota de 1 a 5 com base na transparência."
 
-
-Execute o projeto:
-
-dotnet run
-
-📄 Exemplo de Prompt de Sistema
-
-"Tu és um analista jurídico especializado em prevenção da corrupção. Analisa este PDF e identifica se as cláusulas técnicas permitem a livre concorrência ou se estão desenhadas para um fornecedor específico. Atribui uma nota de 1 a 5 com base na transparência."
-
-⚖️ Aviso Legal
+## ⚖️ Aviso Legal
 
 Esta ferramenta é um assistente de análise e não substitui o parecer de um consultor jurídico ou auditor oficial. O objetivo é triagem e auxílio à tomada de decisão.
 
-🔗 Links Úteis
+## 🔗 Links Úteis
 
-Vertex AI Studio - Multimodal
+-   [Vertex AI Studio - Multimodal](https://www.google.com/search?q=https://console.cloud.google.com/vertex-ai/studio/multimodal%3Fproject%3Dreallife-law-assist "null")
+    
+-   [Pesquisa de Anúncios - Portal BASE](https://www.google.com/search?q=https://www.base.gov.pt/Base4/pt/pesquisa/%3Ftype%3Danuncios "null")
+    
+-   [Documentação .NET GenAI](https://googleapis.github.io/dotnet-genai/ "null")
+    
 
-Pesquisa de Anúncios - Portal BASE
+**Nota:** Utilize este software como uma ferramenta de apoio à decisão e não como um veredito legal final.
 
-Documentação .NET GenAI
+## 📄 Licença
 
-📄 Licença
-
-Distribuído sob a licença MIT. Veja LICENSE para mais informações.
+Distribuído sob a licença MIT. Veja `LICENSE` para mais informações.
