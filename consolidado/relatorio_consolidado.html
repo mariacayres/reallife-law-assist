@@ -1,39 +1,64 @@
 ﻿<!DOCTYPE html>
-<html lang='pt'>
+<html lang='pt-pt'>
 <head>
-    <meta charset='utf-8' />
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
     <title>Relatório Consolidado de Riscos</title>
+    <script src='https://cdn.tailwindcss.com'></script>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/three.js/r121/three.min.js'></script>
+    <script src='https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.waves.min.js'></script>
     <style>
-        body { font-family: Arial, sans-serif; background: #f8fafc; padding: 30px; }
-        h1 { margin-bottom: 20px; }
-        table { border-collapse: collapse; width: 100%; background: white; }
-        th, td { border: 1px solid #ddd; padding: 10px; vertical-align: top; }
-        th { background: #f1f5f9; text-align: left; }
-        .alto { color: #b91c1c; font-weight: bold; }
-        .medio { color: #d97706; font-weight: bold; }
-        .baixo { color: #15803d; font-weight: bold; }
+        body { font-family: Arial, sans-serif; background: #f8fafc; }
+        .alto { color: red; font-weight: bold; }
+        .medio { color: orange; }
+        .baixo { color: green; }
+        table { border-collapse: collapse; width: 100%; margin-top: 1rem; }
+        th, td { border: 1px solid #ccc; padding: 8px; }
+        th { background: #eee; }
+        header h1 { text-shadow: 1px 1px 4px rgba(0,0,0,0.3); }
     </style>
 </head>
 <body>
-<h1>Relatório Consolidado de Riscos</h1>
-<table>
-    <tr>
-        <th>Arquivo</th>
-        <th>Título</th>
-        <th>Score de Risco</th>
-        <th>Riscos Identificados</th>
-    </tr>
-    <tr>
-        <td>1_Caderno_de_encargos_21_2025_CP.pdf</td>
-        <td>CADERNO DE ENCARGOS - Manutenção de AVAC e Sistemas de Águas Quentes Sanitárias</td>
-        <td><strong>4</strong></td>
-        <td>
-            <div class='alto'>Alto - Risco de Resolução por Mora no Pagamento</div>
-            <div class='alto'>Alto - Penalização por Atraso em Urgências</div>
-            <div class='baixo'>Baixo - Dever de Sigilo e Informação</div>
-            <div class='baixo'>Baixo - Risco de Custos Imprevistos</div>
-        </td>
-    </tr>
-</table>
+    <header id='vanta-bg' class='relative overflow-hidden'>
+        <div class='max-w-6xl mx-auto flex items-center justify-between py-6 px-6'>
+            <!-- Logo à esquerda -->
+            <div class='flex items-center space-x-4'>
+                <img src='../img/logo.png' alt='Logo' class='h-12' />
+                <span class='text-white font-bold text-lg'>RealLife Law Assist</span>
+            </div>
+            <!-- Data/hora à direita -->
+            <div class='text-white text-sm'>Gerado em: 02/02/2026 11:58:58</div>
+        </div>
+        <!-- Título centralizado abaixo do header principal -->
+        <div class='text-center py-8'>
+            <h1 class='text-3xl md:text-4xl font-bold text-white'>Relatório Consolidado de Riscos</h1>
+        </div>
+    </header>
+    <main class='max-w-6xl mx-auto py-10 px-6'>
+        <table class='shadow-lg'>
+            <tr class='bg-gray-200'>
+                <th>Arquivo</th>
+                <th>Título</th>
+                <th>Score de Risco</th>
+                <th>Riscos Identificados</th>
+            </tr>
+            <tr>
+                <td>1_Caderno_de_encargos_21_2025_CP.pdf</td>
+                <td>Caderno de Encargos - Manuten&#231;&#227;o de AVAC e Sistemas de &#193;guas Quentes Sanit&#225;rias</td>
+                <td>4</td>
+                <td>
+<div class='alto'>Alto - Risco de Cessa&#231;&#227;o Prematura por Limite Or&#231;amental</div>
+<div class='alto'>Alto - Risco de Resolu&#231;&#227;o por Mora de Pagamento (Contratante P&#250;blico)</div>
+<div class='baixo'>Baixo - Risco de Alega&#231;&#227;o de For&#231;a Maior</div>
+                </td>
+            </tr>
+        </table>
+    </main>
+    <footer class='text-center mt-10 mb-6 text-gray-600 text-sm'>
+        Relatório gerado automaticamente. Todos os direitos reservados © 2026
+    </footer>
+<script>
+VANTA.WAVES({ el: '#vanta-bg', mouseControls: false, touchControls: false, gyroControls: false, minHeight: 200.0, minWidth: 200.0, scale: 1.0, scaleMobile: 1.0, color: 0x1e3a8a, shininess: 35, waveHeight: 20, waveSpeed: 0.6, zoom: 0.85 });
+</script>
 </body>
 </html>

@@ -117,7 +117,14 @@ Analise o documento e responda ESTRITAMENTE com um JSON válido (sem markdown) s
                 Titulo = dados.Titulo,
                 Descricao = dados.Descricao,
                 ScoreRisco = scoreRisco,
-                Riscos = dados.Riscos ?? new List<Risco>()
+                Riscos = (dados.Riscos ?? new List<Risco>())
+                    .Select(r => new RiscoItem
+                    {
+                        Titulo = r.Titulo,
+                        Tipo = r.Tipo,
+                        Descricao = r.Descricao // agora compatível
+                    })
+                    .ToList()
             });
 
             // --- 4. Geração dos Outputs individuais ---
@@ -160,7 +167,7 @@ Analise o documento e responda ESTRITAMENTE com um JSON válido (sem markdown) s
         );
 
         var htmlConsolidatedWriterService = new HtmlConsolidatedWriterService();
-htmlConsolidatedWriterService.CreateConsolidatedHtml(consolidatedHtmlPath, consolidadoOrdenado);
+        htmlConsolidatedWriterService.CreateConsolidatedHtml(consolidatedHtmlPath, consolidadoOrdenado);
 
         Console.WriteLine($"✔ HTML consolidado gerado: {consolidatedHtmlPath}");
     }
