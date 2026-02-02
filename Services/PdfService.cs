@@ -4,6 +4,7 @@ using PdfSharpCore.Drawing;
 using PdfSharpCore.Pdf;
 using RealLifeLawAssist.Models;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace RealLifeLawAssist.Services
 {
@@ -385,6 +386,19 @@ namespace RealLifeLawAssist.Services
                 page.Width - 50 - size.Width,
                 page.Height - 30
             );
+        }
+        
+        public int CalcularScoreRisco(AnaliseDados dados)
+        {
+            if (dados.Riscos == null || !dados.Riscos.Any())
+            return 0;
+
+            return dados.Riscos.Sum(r =>r.Tipo?.ToLower() switch
+            {
+                "alto" => 2,
+                "medio" => 1,
+                _ => 0
+            });
         }
     }
 }
