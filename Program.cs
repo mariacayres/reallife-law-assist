@@ -110,6 +110,11 @@ Analise o documento e responda ESTRITAMENTE com um JSON válido (sem markdown) s
             // 🔹 cálculo do score de risco
             var scoreRisco = pdfOutputService.CalcularScoreRisco(dados);
 
+            // --- 4. Geração dos Outputs individuais ---
+            var fileName = Path.GetFileNameWithoutExtension(pdfPath);
+            var outputPdfPath = Path.Combine(outputDir, $"{fileName}_analise.pdf");
+            var outputHtmlPath = Path.Combine(outputDir, $"{fileName}_analise.html");
+
             // 🔹 adiciona ao consolidado
             consolidado.Add(new AnaliseConsolidadaItem
             {
@@ -124,14 +129,9 @@ Analise o documento e responda ESTRITAMENTE com um JSON válido (sem markdown) s
                         Tipo = r.Tipo,
                         Descricao = r.Descricao // agora compatível
                     })
-                    .ToList()
+                    .ToList(),
+                OutputHtmlPath = outputHtmlPath
             });
-
-            // --- 4. Geração dos Outputs individuais ---
-            var fileName = Path.GetFileNameWithoutExtension(pdfPath);
-
-            var outputPdfPath = Path.Combine(outputDir, $"{fileName}_analise.pdf");
-            var outputHtmlPath = Path.Combine(outputDir, $"{fileName}_analise.html");
 
             pdfOutputService.CreateAnalysisPdf(
                 outputPdfPath,
