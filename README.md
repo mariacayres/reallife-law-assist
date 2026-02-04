@@ -23,8 +23,8 @@ Saída:
 **PDF Relatório de Análise Técnica:** Análise de risco do Caderno de Encargos AVAC/AQS do SMCB.
 
 <div align="center">
-  <img src="pdf1.png" alt="Relatório PDF - Página 1" width="400"/>
-  <img src="pdf2.png" alt="Relatório PDF - Página 2" width="400"/>
+  <img src="pdf1.png" alt="Relatório PDF - Página 1" width="400" height="500"/>
+  <img src="pdf2.png" alt="Relatório PDF - Página 2" width="400" height="500"/>
 </div>
 
 **HTML Consolidado:** Dashboard geral com métricas, gráficos de risco e filtros.
@@ -36,7 +36,7 @@ Saída:
 **HTML Individual:** Relatório detalhado de cada documento analisado.
 
 <div align="center">
-  <img src="html-caderno1.png" alt="Relatório Individual" width="600"/>
+  <img src="html-cadeno1.png" alt="Relatório Individual" width="600"/>
 </div>
 
 ## 🏗️ Arquitetura do Sistema
