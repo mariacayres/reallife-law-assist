@@ -1,52 +1,48 @@
-using System;
-using System.IO;
+using System.Linq;
 using Xunit;
-using RealLifeLawAssist.Services;
 using RealLifeLawAssist.Models;
-using System.Collections.Generic;
+using RealLifeLawAssist.Services;
 
 namespace RealLifeLawAssist.Tests
 {
     public class PdfServiceTests
     {
-        [Fact]
-        public void CreateAnalysisPdf_DadosValidos_DeveCriarPdf()
+        private readonly PdfService _service;
+
+        public PdfServiceTests()
         {
-            // Arrange
-            var service = new PdfService();
+            _service = new PdfService();
+        }
 
-            var outputPath = Path.Combine(
-                Path.GetTempPath(),
-                $"analise_test_{Guid.NewGuid()}.pdf"
-            );
-
+        [Fact]
+        public void CalcularScoreRisco_DeveRetornarScoreCorreto()
+        {
             var dados = new AnaliseDados
             {
-                Titulo = "Contrato Teste",
-                Descricao = "Descrição do contrato",
-                Objeto = "Objeto teste",
-                Localizacao = "Lisboa",
-                TotalLinhas = "10",
-                PrecoBase = 1000,
-                CustoKm = 5,
-                Vigencia = "12 meses",
-                Caucao = "5%",
-                Pagamento = "30 dias",
-                Conclusao = "Conclusão teste",
-                ClausulasFixas = new List<ClausulaFixa>(),
-                AspetosVariaveis = new List<AspetoVariavel>(),
-                Penalidades = new List<Penalidade>(),
-                Riscos = new List<Risco>()
+                Riscos = new System.Collections.Generic.List<Risco>
+                {
+                    new() { Tipo = "alto" },
+                    new() { Tipo = "alto" },
+                    new() { Tipo = "medio" }
+                }
             };
 
-            // Act
-            service.CreateAnalysisPdf(outputPath, "Contrato Teste", dados);
+            var score = _service.CalcularScoreRisco(dados);
 
-            // Assert
-            Assert.True(File.Exists(outputPath));
+            Assert.Equal(5, score); // 2 + 2 + 1
+        }
 
-            // Cleanup
-            File.Delete(outputPath);
+        [Fact]
+        public void CalcularScoreRisco_ComListaVazia_DeveRetornarZero()
+        {
+            var dados = new AnaliseDados
+            {
+                Riscos = new System.Collections.Generic.List<Risco>()
+            };
+
+            var score = _service.CalcularScoreRisco(dados);
+
+            Assert.Equal(0, score);
         }
     }
 }

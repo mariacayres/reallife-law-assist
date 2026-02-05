@@ -8,7 +8,7 @@ namespace RealLifeLawAssist.Services
 {
     public class PdfReaderService
     {
-        public IEnumerable<string> GetPdfFiles(string folder = null)
+        public IEnumerable<string> GetPdfFiles(string? folder = null)
         {
             // Se não especificado, usa pasta pdfs na raiz do projeto
             if (string.IsNullOrEmpty(folder))
