@@ -392,11 +392,11 @@ namespace RealLifeLawAssist.Services
         {
             if (dados.Riscos == null) return 0;
 
-            return dados.Riscos.Sum(r =>r.Tipo?.ToLower() switch
+            return dados.Riscos.Sum(r => r.Tipo?.ToLower() switch
             {
-            "alto" => 2,
-            "medio" => 1,
-            _ => 0
+                "alto" => 2,
+                "medio" => 1,
+                _ => 0
             });
         }
     }
