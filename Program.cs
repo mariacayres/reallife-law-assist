@@ -10,30 +10,40 @@ using RealLifeLawAssist.Services;
 
 try
 {
-    // --- 1. Inicialização dos Serviços ---
+    // =====================================================
+    // 1. BOOTSTRAP DA APLICAÇÃO
+    // =====================================================
+
     using var geminiService = new GeminiService();
     var pdfReaderService = new PdfReaderService();
     var pdfOutputService = new PdfService();
     var htmlWriterService = new HtmlWriterService();
     var config = new ConfigEnv();
 
-    // Pasta onde os outputs serão salvos
+    // Diretório de saída
     var outputDir = Path.Combine(Directory.GetCurrentDirectory(), "consolidado");
     Directory.CreateDirectory(outputDir);
 
-    // --- 2. Leitura dos PDFs ---
+    // =====================================================
+    // 2. DESCOBERTA DOS PDFs
+    // =====================================================
+
     var pdfFiles = pdfReaderService.GetPdfFiles()?.ToList() ?? new List<string>();
-    if (pdfFiles.Count == 0)
+
+    if (!pdfFiles.Any())
     {
         Console.WriteLine("Nenhum PDF encontrado.");
         return;
     }
 
-    // Lista para o relatório consolidado
+    // Lista usada no relatório consolidado
     var consolidado = new List<AnaliseConsolidadaItem>();
 
-    string jsonInstruction =
-        @"
+    // =====================================================
+    // 3. CONTRATO JSON PARA A IA
+    // =====================================================
+
+    string jsonInstruction = @"
 Analise o documento e responda ESTRITAMENTE com um JSON válido (sem markdown) seguindo esta estrutura:
 {
     ""titulo"": ""Titulo do Relatório"",
@@ -48,10 +58,18 @@ Analise o documento e responda ESTRITAMENTE com um JSON válido (sem markdown) s
     ""caucao"": ""Ex: 5%"",
     ""pagamento"": ""Ex: 30 dias"",
     ""conclusao"": ""Texto da conclusão final"",
-    ""clausulasFixas"": [ { ""area"": ""Ex: Frota"", ""clausula"": ""Art. 5"", ""requisito"": ""Descrição"" } ],
-    ""aspetosVariaveis"": [ { ""titulo"": ""Ex: Preço"", ""descricao"": ""Critério"" } ],
-    ""penalidades"": [ { ""nivel"": ""Leve/Grave"", ""exemplos"": ""Atraso"", ""coima"": ""Valor"", ""compulsoria"": ""Valor"" } ],
-    ""riscos"": [ { ""tipo"": ""Alto/Baixo"", ""titulo"": ""Titulo"", ""descricao"": ""Descrição"" } ]
+    ""clausulasFixas"": [
+        { ""area"": ""Ex: Frota"", ""clausula"": ""Art. 5"", ""requisito"": ""Descrição"" }
+    ],
+    ""aspetosVariaveis"": [
+        { ""titulo"": ""Ex: Preço"", ""descricao"": ""Critério"" }
+    ],
+    ""penalidades"": [
+        { ""nivel"": ""Leve/Grave"", ""exemplos"": ""Atraso"", ""coima"": ""Valor"", ""compulsoria"": ""Valor"" }
+    ],
+    ""riscos"": [
+        { ""tipo"": ""Alto/Baixo"", ""titulo"": ""Titulo"", ""descricao"": ""Descrição"" }
+    ]
 }";
 
     string prompt;
@@ -76,7 +94,10 @@ Analise o documento e responda ESTRITAMENTE com um JSON válido (sem markdown) s
 
     string fullPrompt = $"{prompt}\n\n{jsonInstruction}";
 
-    // --- 3. Processamento dos PDFs ---
+    // =====================================================
+    // 4. PROCESSAMENTO DE CADA PDF
+    // =====================================================
+
     foreach (var pdfPath in pdfFiles)
     {
         try
@@ -84,38 +105,54 @@ Analise o documento e responda ESTRITAMENTE com um JSON válido (sem markdown) s
             Console.WriteLine($"\n=== Processando PDF: {pdfPath} ===");
 
             var pdfText = pdfReaderService.ExtractTextFromPdf(pdfPath);
+
             if (string.IsNullOrWhiteSpace(pdfText))
             {
-                Console.WriteLine("PDF vazio. Pulando...");
+                Console.WriteLine("PDF vazio. Ignorado.");
                 continue;
             }
 
-            var analysisJson = await geminiService.GenerateContentAsync(pdfText, fullPrompt);
+            var analysisJson = await geminiService.GenerateContentAsync(
+                pdfText,
+                fullPrompt
+            );
+
+            // Limpeza de blocos ```json
+            analysisJson = analysisJson.Trim();
+            if (analysisJson.StartsWith("```"))
+            {
+                int end = analysisJson.LastIndexOf("```");
+                if (end > 0)
+                    analysisJson = analysisJson.Substring(3, end - 3).Trim();
+            }
 
             AnaliseDados dados;
             try
             {
                 dados = JsonSerializer.Deserialize<AnaliseDados>(
                     analysisJson,
-                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+                    new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    }
                 )!;
             }
-            catch (Exception ex)
+            catch (JsonException)
             {
-                Console.WriteLine("Erro ao converter JSON para AnaliseDados:");
-                Console.WriteLine(ex.Message);
+                Console.WriteLine("JSON inválido. Ignorado.");
+                Console.WriteLine(analysisJson);
                 continue;
             }
 
-            // 🔹 cálculo do score de risco
+            // Cálculo do score de risco
             var scoreRisco = pdfOutputService.CalcularScoreRisco(dados);
 
-            // --- 4. Geração dos Outputs individuais ---
+            // Caminhos de saída
             var fileName = Path.GetFileNameWithoutExtension(pdfPath);
             var outputPdfPath = Path.Combine(outputDir, $"{fileName}_analise.pdf");
             var outputHtmlPath = Path.Combine(outputDir, $"{fileName}_analise.html");
 
-            // 🔹 adiciona ao consolidado
+            // Dados para o consolidado
             consolidado.Add(new AnaliseConsolidadaItem
             {
                 Arquivo = Path.GetFileName(pdfPath),
@@ -127,12 +164,13 @@ Analise o documento e responda ESTRITAMENTE com um JSON válido (sem markdown) s
                     {
                         Titulo = r.Titulo,
                         Tipo = r.Tipo,
-                        Descricao = r.Descricao // agora compatível
+                        Descricao = r.Descricao
                     })
                     .ToList(),
                 OutputHtmlPath = outputHtmlPath
             });
 
+            // Outputs individuais
             pdfOutputService.CreateAnalysisPdf(
                 outputPdfPath,
                 Path.GetFileName(pdfPath),
@@ -154,22 +192,44 @@ Analise o documento e responda ESTRITAMENTE com um JSON válido (sem markdown) s
         }
     }
 
-    // --- 5. Ordenar e gerar HTML consolidado ---
+    // =====================================================
+    // 5. RELATÓRIOS CONSOLIDADOS (HTML + PDF)
+    // =====================================================
+
     if (consolidado.Any())
     {
         var consolidadoOrdenado = consolidado
             .OrderByDescending(c => c.ScoreRisco)
             .ToList();
 
+        // HTML consolidado
         var consolidatedHtmlPath = Path.Combine(
             outputDir,
             "relatorio_consolidado.html"
         );
 
         var htmlConsolidatedWriterService = new HtmlConsolidatedWriterService();
-        htmlConsolidatedWriterService.CreateConsolidatedHtml(consolidatedHtmlPath, consolidadoOrdenado);
+        htmlConsolidatedWriterService.CreateConsolidatedHtml(
+            consolidatedHtmlPath,
+            consolidadoOrdenado
+        );
 
         Console.WriteLine($"✔ HTML consolidado gerado: {consolidatedHtmlPath}");
+
+        // PDF consolidado
+        var consolidatedPdfPath = Path.Combine(
+            outputDir,
+            "relatorio_consolidado.pdf"
+        );
+
+        var pdfConsolidatedService = new RealLifeLawAssist.Services.PdfConsolidatedService();
+
+        pdfConsolidatedService.CreateConsolidatedPdf(
+            consolidatedPdfPath,
+            consolidadoOrdenado
+        );
+
+        Console.WriteLine($"✔ PDF consolidado gerado: {consolidatedPdfPath}");
     }
 }
 catch (Exception ex)
