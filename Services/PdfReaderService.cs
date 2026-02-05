@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq; // ✅ ESSENCIAL
+using System.Linq;
 using UglyToad.PdfPig;
 
 namespace RealLifeLawAssist.Services
@@ -14,9 +14,9 @@ namespace RealLifeLawAssist.Services
             if (string.IsNullOrEmpty(folder))
             {
                 var projectRoot = Directory.GetParent(AppContext.BaseDirectory)?
-                               .Parent?.Parent?.Parent?.FullName;
+                                   .Parent?.Parent?.Parent?.FullName;
                 folder = Path.Combine(projectRoot ?? "", "pdfs");
-                
+
                 // Cria a pasta se não existir
                 if (!Directory.Exists(folder))
                 {
@@ -24,9 +24,9 @@ namespace RealLifeLawAssist.Services
                     Console.WriteLine($"Pasta criada: {folder}");
                 }
             }
-            
+
             Console.WriteLine($"Procurando PDFs na pasta: {folder}");
-            
+
             if (!Directory.Exists(folder))
                 return Array.Empty<string>();
 
@@ -37,12 +37,25 @@ namespace RealLifeLawAssist.Services
 
         public string ExtractTextFromPdf(string pdfPath)
         {
-            using var document = PdfDocument.Open(pdfPath);
+            if (string.IsNullOrWhiteSpace(pdfPath))
+                throw new FileNotFoundException("PDF não encontrado.", pdfPath ?? "");
 
-            return string.Join(
-                Environment.NewLine,
-                document.GetPages().Select(p => p.Text)
-            );
+            if (!File.Exists(pdfPath))
+                throw new FileNotFoundException("PDF não encontrado.", pdfPath);
+
+            try
+            {
+                using var document = PdfDocument.Open(pdfPath);
+                return string.Join(
+                    Environment.NewLine,
+                    document.GetPages().Select(p => p.Text)
+                );
+            }
+            catch (Exception ex)
+            {
+                // Caso o PDF esteja corrompido ou não seja legível
+                throw new Exception($"Erro ao ler o PDF: {ex.Message}", ex);
+            }
         }
     }
 }
