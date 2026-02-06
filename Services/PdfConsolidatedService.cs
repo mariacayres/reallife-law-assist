@@ -141,8 +141,89 @@ namespace RealLifeLawAssist.Services
             double margin,
             AnaliseConsolidadaItem item)
         {
-            int riscosCount = item.Riscos?.Count ?? 0;
-            double cardHeight = 80 + (riscosCount * 14);
+            // Calcular altura dinamicamente baseado no conteúdo
+            double currentY = y;
+            double cardStartY = y;
+            
+            // TÍTULO EXATO: CADERNO DE ENCARGOS AQUISIÇÃO DE SERVIÇOS CONCURSO PÚBLICO- Manutenção de AVAC e Sistemas de Águas Quentes Sanitárias
+            string tituloDocumento = string.IsNullOrEmpty(item.Titulo) ? "Documento sem título" : item.Titulo;
+
+            // Determinar cor da borda baseado no score
+            XColor border = item.ScoreRisco >= 8 ? XColors.DarkRed :
+                            item.ScoreRisco >= 4 ? XColors.DarkOrange : 
+                            XColors.DarkGreen;
+
+            // ===== DESENHAR TÍTULO LONGO =====
+            double titleY = currentY + 15;
+            double maxTitleWidth = page.Width - margin * 2 - 20;
+            
+            // DESENHAR O TÍTULO COMPLETO COM QUEBRA - MÉTODO MELHORADO
+            double linhaY = titleY;
+            
+            // Método mais robusto para títulos muito longos
+            DesenharTituloComQuebraMelhorado(gfx, tituloDocumento, _sectionFont, XBrushes.Black, 
+                margin + 10, ref linhaY, maxTitleWidth);
+            
+            // "Total de Riscos: X" - IGUAL NA IMAGEM
+            double totalRiscosY = linhaY + 10;
+            int totalRiscos = item.Riscos?.Count ?? 0;
+            gfx.DrawString(
+                $"Total de Riscos: {totalRiscos}",
+                _bodyFont,
+                XBrushes.DarkBlue,
+                margin + 10,
+                totalRiscosY
+            );
+            
+            // Score de risco
+            double scoreY = totalRiscosY + 15;
+            
+            gfx.DrawString(
+                $"Score de Risco: {item.ScoreRisco}",
+                _bodyFont,
+                new XSolidBrush(border),
+                margin + 10,
+                scoreY
+            );
+            
+            // Lista de riscos
+            double risksY = scoreY + 20;
+            double risksHeight = 0;
+
+            if (item.Riscos != null && item.Riscos.Count > 0)
+            {
+                foreach (var risco in item.Riscos)
+                {
+                    if (risco == null) continue;
+                    
+                    XBrush riscoBrush = risco.Tipo?.ToLower().Contains("alto") == true ? 
+                                       XBrushes.DarkRed : XBrushes.Black;
+
+                    string tituloRisco = string.IsNullOrEmpty(risco.Titulo) ? "Risco sem título" : risco.Titulo;
+                    gfx.DrawString(
+                        $"• {tituloRisco}",
+                        _smallFont,
+                        riscoBrush,
+                        margin + 20,
+                        risksY + risksHeight
+                    );
+                    risksHeight += 14;
+                }
+            }
+            else
+            {
+                gfx.DrawString(
+                    "• Nenhum risco identificado",
+                    _smallFont,
+                    XBrushes.Gray,
+                    margin + 20,
+                    risksY
+                );
+                risksHeight += 14;
+            }
+
+            // Calcular altura total do card
+            double cardHeight = (risksY + risksHeight) - cardStartY + 30;
 
             // Verificar se precisa de nova página
             if (y + cardHeight > page.Height - 80)
@@ -151,80 +232,118 @@ namespace RealLifeLawAssist.Services
                 page = document.AddPage();
                 gfx = XGraphics.FromPdfPage(page);
                 
-                // Redesenhar cabeçalho na nova página
-                DrawHeader(gfx, page, 0); // 0 porque não queremos mostrar número de docs
-                y = 120; // Resetar posição Y após cabeçalho
+                DrawHeader(gfx, page, 0);
+                y = 120;
+                cardStartY = y;
+                
+                DrawCard(document, ref page, ref gfx, ref y, margin, item);
+                return;
             }
 
-            // Determinar cor da borda baseado no score
-            XColor border = item.ScoreRisco >= 8 ? XColors.DarkRed :
-                            item.ScoreRisco >= 4 ? XColors.DarkOrange : 
-                            XColors.DarkGreen;
-
-            // Desenhar card
+            // Desenhar borda do card
             gfx.DrawRectangle(
-                new XPen(border, 2), // Reduzi de 3 para 2 para melhor visualização
+                new XPen(border, 2),
                 margin,
-                y,
+                cardStartY,
                 page.Width - margin * 2,
                 cardHeight
             );
 
-            // Título do documento
-            gfx.DrawString(
-                item.Titulo ?? "Documento sem título",
-                _sectionFont,
-                XBrushes.Black,
-                margin + 10,
-                y + 22
-            );
+            y = cardStartY + cardHeight + 15;
+        }
 
-            // Score de risco
-            gfx.DrawString(
-                $"Score de Risco: {item.ScoreRisco}",
-                _bodyFont,
-                new XSolidBrush(border),
-                margin + 10,
-                y + 40
-            );
+        // ================= MÉTODO MELHORADO PARA DESENHAR TÍTULO COM QUEBRA =================
+        private void DesenharTituloComQuebraMelhorado(XGraphics gfx, string texto, XFont fonte, XBrush pincel,
+            double x, ref double y, double larguraMaxima)
+        {
+            if (string.IsNullOrWhiteSpace(texto)) return;
 
-            // Lista de riscos
-            double ry = y + 58;
-
-            if (item.Riscos != null && item.Riscos.Count > 0)
+            // Se o texto couber em uma linha, desenha direto
+            XSize tamanhoTotal = gfx.MeasureString(texto, fonte);
+            if (tamanhoTotal.Width <= larguraMaxima)
             {
-                foreach (var risco in item.Riscos)
+                gfx.DrawString(texto, fonte, pincel, x, y);
+                y += fonte.Height + 2;
+                return;
+            }
+            
+            // Se for MUITO longo, quebrar em partes
+            string[] palavras = texto.Split(' ');
+            string linhaAtual = "";
+            
+            for (int i = 0; i < palavras.Length; i++)
+            {
+                string palavra = palavras[i];
+                string testeLinha = string.IsNullOrEmpty(linhaAtual) ? palavra : linhaAtual + " " + palavra;
+                XSize tamanhoTeste = gfx.MeasureString(testeLinha, fonte);
+                
+                if (tamanhoTeste.Width > larguraMaxima)
                 {
-                    if (risco == null) continue;
-                    
-                    // Usar cor diferente baseado no tipo de risco
-                    XBrush riscoBrush = risco.Tipo?.ToLower().Contains("alto") == true ? 
-                                       XBrushes.DarkRed : XBrushes.Black;
-
-                    gfx.DrawString(
-                        $"• {risco.Titulo ?? "Risco sem título"}",
-                        _smallFont,
-                        riscoBrush,
-                        margin + 20,
-                        ry
-                    );
-                    ry += 14;
+                    if (string.IsNullOrEmpty(linhaAtual))
+                    {
+                        // Palavra individual é muito longa - quebrar a palavra
+                        QuebrarPalavraLonga(gfx, palavra, fonte, pincel, x, ref y, larguraMaxima);
+                        linhaAtual = "";
+                    }
+                    else
+                    {
+                        // Desenha a linha atual
+                        gfx.DrawString(linhaAtual, fonte, pincel, x, y);
+                        y += fonte.Height + 2;
+                        linhaAtual = palavra;
+                    }
+                }
+                else
+                {
+                    linhaAtual = testeLinha;
                 }
             }
-            else
+            
+            // Desenha a última linha
+            if (!string.IsNullOrEmpty(linhaAtual))
             {
-                // Se não há riscos
-                gfx.DrawString(
-                    "• Nenhum risco identificado",
-                    _smallFont,
-                    XBrushes.Gray,
-                    margin + 20,
-                    ry
-                );
-                ry += 14;
+                gfx.DrawString(linhaAtual, fonte, pincel, x, y);
+                y += fonte.Height + 2;
             }
+        }
 
-            y += cardHeight + 15;
+        // ================= MÉTODO PARA QUEBRAR PALAVRAS MUITO LONGAS =================
+        private void QuebrarPalavraLonga(XGraphics gfx, string palavra, XFont fonte, XBrush pincel,
+            double x, ref double y, double larguraMaxima)
+        {
+            if (string.IsNullOrEmpty(palavra)) return;
+            
+            // Se a palavra couber, desenha normal
+            XSize tamanhoPalavra = gfx.MeasureString(palavra, fonte);
+            if (tamanhoPalavra.Width <= larguraMaxima)
+            {
+                gfx.DrawString(palavra, fonte, pincel, x, y);
+                y += fonte.Height + 2;
+                return;
+            }
+            
+            // Palavra muito longa - quebrar manualmente
+            string parteAtual = "";
+            for (int i = 0; i < palavra.Length; i++)
+            {
+                parteAtual += palavra[i];
+                XSize tamanhoParte = gfx.MeasureString(parteAtual + "-", fonte);
+                
+                if (tamanhoParte.Width > larguraMaxima)
+                {
+                    // Desenha a parte atual com hífen
+                    gfx.DrawString(parteAtual + "-", fonte, pincel, x, y);
+                    y += fonte.Height + 2;
+                    parteAtual = palavra[i].ToString(); // Começa nova linha com o caractere atual
+                }
+            }
+            
+            // Desenha o que sobrou
+            if (!string.IsNullOrEmpty(parteAtual))
+            {
+                gfx.DrawString(parteAtual, fonte, pincel, x, y);
+                y += fonte.Height + 2;
+            }
         }
 
         // ================= FOOTER =================
@@ -280,6 +399,31 @@ namespace RealLifeLawAssist.Services
                     _ => 0
                 };
             });
+        }
+
+        // ================= MÉTODO PARA GERAR DADOS DE TESTE =================
+        public List<AnaliseConsolidadaItem> GerarDadosTeste()
+        {
+            return new List<AnaliseConsolidadaItem>
+            {
+                new AnaliseConsolidadaItem
+                {
+                    Arquivo = "caderno_encargos.pdf",
+                    // TÍTULO EXATO QUE VOCÊ MANDOU
+                    Titulo = "CADERNO DE ENCARGOS AQUISIÇÃO DE SERVIÇOS CONCURSO PÚBLICO- Manutenção de AVAC e Sistemas de Águas Quentes Sanitárias",
+                    Descricao = "Documento para aquisição de serviços de manutenção via concurso público",
+                    ScoreRisco = 6,
+                    OutputHtmlPath = "/analises/encargos.html",
+                    Riscos = new List<RiscoItem>
+                    {
+                        new RiscoItem { Tipo = "Alto", Titulo = "Incumprimento de Tempo de Resposta (Urgência)" },
+                        new RiscoItem { Tipo = "Alto", Titulo = "Resolução Contratual por Falha Crítica" },
+                        new RiscoItem { Tipo = "Médio", Titulo = "Risco Financeiro por Revisão de Preços" },
+                        new RiscoItem { Tipo = "Baixo", Titulo = "Risco de Não Pagamento" }
+                    },
+                    Badges = new List<string> { "Concurso Público", "AVAC", "Manutenção" }
+                }
+            };
         }
     }
 }
