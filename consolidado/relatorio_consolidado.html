@@ -1,0 +1,209 @@
+﻿<!DOCTYPE html>
+<html lang='pt-pt'>
+<head>
+  <meta charset='UTF-8'>
+  <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+  <title>Dashboard Consolidado de Risco Contratual</title>
+  <script src='https://cdn.tailwindcss.com'></script>
+  <script src='https://cdn.jsdelivr.net/npm/chart.js'></script>
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/three.js/r121/three.min.js'></script>
+  <script src='https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.waves.min.js'></script>
+  <style>
+    #vanta-bg { min-height: 220px; }
+    @media (max-width: 768px) {
+      #vanta-bg { min-height: 180px; padding: 2rem 1rem; }
+      #vanta-bg h1 { font-size: 1.5rem; }
+      #vanta-bg p { font-size: 0.875rem; }
+    }
+  </style>
+</head>
+<body class='bg-gray-50 text-gray-900'>
+<header id='vanta-bg' style='background-color:#1e3a8a' class='text-white py-16 px-6 relative overflow-hidden'>
+  <div class='max-w-7xl mx-auto relative z-10 px-4'>
+    <h1 class='text-4xl font-bold mb-3 leading-tight'>Dashboard Consolidado de Risco Contratual</h1>
+    <p class='text-blue-200 text-lg font-light'>Processado em 06/02/2026 11:39 · 1 documentos analisados</p>
+  </div>
+</header>
+<main class='max-w-7xl mx-auto px-4 md:px-6 py-10 space-y-10'>
+<div class='grid md:grid-cols-4 gap-4'>
+<div class='bg-white p-4 rounded-xl border shadow-sm'><p class='text-xs uppercase text-gray-500'>Documentos</p><p class='text-2xl font-bold'>1</p></div>
+<div class='bg-white p-4 rounded-xl border shadow-sm'><p class='text-xs uppercase text-gray-500'>Risco Alto</p><p class='text-2xl font-bold text-red-600'>2</p></div>
+<div class='bg-white p-4 rounded-xl border shadow-sm'><p class='text-xs uppercase text-gray-500'>Risco Médio</p><p class='text-2xl font-bold text-amber-500'>0</p></div>
+<div class='bg-white p-4 rounded-xl border shadow-sm'><p class='text-xs uppercase text-gray-500'>Risco Baixo</p><p class='text-2xl font-bold text-green-600'>1</p></div>
+</div>
+<div class='bg-white p-6 rounded-xl border shadow-sm h-[360px]'>
+  <canvas id='graficoNivel' class='w-full h-full'></canvas>
+</div>
+<div class='flex flex-wrap gap-4 items-center'>
+  <div class='flex-1 min-w-[250px]'>
+    <input id='filtroTexto' placeholder='Pesquisar por título, descrição...' onkeyup='aplicarFiltros()' class='p-3 border rounded-lg w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500' />
+  </div>
+  <div class='flex-shrink-0'>
+    <select id='filtroRisco' onchange='aplicarFiltros()' class='p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500'>
+      <option value=''>Todos os riscos</option>
+      <option value='alto'>Risco Alto</option>
+      <option value='medio'>Risco Médio</option>
+      <option value='baixo'>Risco Baixo</option>
+    </select>
+  </div>
+</div>
+<div id='cards-container' class='grid md:grid-cols-2 lg:grid-cols-3 gap-6'>
+<div class='bg-white p-6 rounded-xl border-l-4 border-amber-500 shadow-sm hover:shadow-md transition-shadow duration-300 card' data-risco='medio'>
+<h3 class='font-bold text-lg mb-2 text-gray-800'>CADERNO DE ENCARGOS AQUISI&#199;&#195;O DE SERVI&#199;OS: Manuten&#231;&#227;o de AVAC e Sistemas de &#193;guas Quentes Sanit&#225;rias</h3>
+<p class='text-sm text-gray-600 mb-1'>Score de Risco: <strong class='text-amber-500'>4</strong></p>
+<p class='text-sm text-gray-500 mb-3 line-clamp-2'>Documento que estabelece as cl&#225;usulas contratuais e obriga&#231;&#245;es para a aquisi&#231;&#227;o de servi&#231;os de manuten&#231;&#227;o de AVAC e AQS, incluindo o prazo de execu&#231;&#227;o, pre&#231;o base, condi&#231;&#245;es de pagamento e o regime sancionat&#243;rio aplic&#225;vel ao adjudicat&#225;rio.</p>
+<details class='mt-3'>
+<summary class='cursor-pointer text-sm font-medium text-blue-600 hover:text-blue-800 flex items-center'>
+<span>Ver 3 risco(s)</span>
+<svg class='w-4 h-4 ml-1 transition-transform duration-300' fill='none' stroke='currentColor' viewBox='0 0 24 24'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'></path></svg>
+</summary>
+<ul class='mt-3 text-sm text-gray-600 space-y-2'>
+<li class='flex items-start'>
+  <span class='text-red-600 mr-2'>•</span>
+  <span>Falha no Tempo de Resposta a Urg&#234;ncias</span>
+</li>
+<li class='flex items-start'>
+  <span class='text-red-600 mr-2'>•</span>
+  <span>Viola&#231;&#227;o Contratual Grave/Reiterada</span>
+</li>
+<li class='flex items-start'>
+  <span class='text-green-600 mr-2'>•</span>
+  <span>Atrasos devidos a For&#231;a Maior</span>
+</li>
+</ul>
+</details>
+<a href='C:\Users\utilizador\Desktop\reallife-law-assist\consolidado\1_Caderno_de_encargos_21_2025_CP_analise.html' target='_blank' class='inline-block mt-4 text-blue-700 text-sm font-semibold hover:text-blue-900 transition-colors duration-200'>
+  Ver análise completa →
+</a>
+</div>
+</div>
+<div id='sem-resultados' class='hidden text-center py-12'>
+  <p class='text-gray-500 text-lg'>Nenhum documento encontrado com os filtros atuais.</p>
+  <button onclick='limparFiltros()' class='mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors'>Limpar filtros</button>
+</div>
+</main>
+<footer class='bg-white border-t py-8 text-center'>
+  <div class='max-w-7xl mx-auto px-4'>
+    <p class='text-xs text-gray-400 mb-2'>Dashboard técnico gerado para análise jurídica</p>
+    <p class='text-xs text-gray-400'>RealLife Law Assist © 2026</p>
+  </div>
+</footer>
+<script>
+
+                function aplicarFiltros() {
+                    const texto = document.getElementById('filtroTexto').value.toLowerCase();
+                    const risco = document.getElementById('filtroRisco').value;
+                    const cards = document.querySelectorAll('.card');
+                    let visiveis = 0;
+
+                    cards.forEach(card => {
+                        const textoCard = card.innerText.toLowerCase();
+                        const nivelCard = card.dataset.risco;
+                        const correspondeTexto = texto === '' || textoCard.includes(texto);
+                        const correspondeRisco = risco === '' || nivelCard === risco;
+                        
+                        if (correspondeTexto && correspondeRisco) {
+                            card.style.display = 'block';
+                            visiveis++;
+                        } else {
+                            card.style.display = 'none';
+                        }
+                    });
+
+                    // Mostra/oculta mensagem de sem resultados
+                    const semResultados = document.getElementById('sem-resultados');
+                    if (visiveis === 0) {
+                        semResultados.classList.remove('hidden');
+                    } else {
+                        semResultados.classList.add('hidden');
+                    }
+                }
+
+                function limparFiltros() {
+                    document.getElementById('filtroTexto').value = '';
+                    document.getElementById('filtroRisco').value = '';
+                    aplicarFiltros();
+                }
+
+                // Anima os detalhes (expandir/recolher)
+                document.querySelectorAll('details').forEach(details => {
+                    const summary = details.querySelector('summary');
+                    const svg = summary.querySelector('svg');
+                    
+                    details.addEventListener('toggle', () => {
+                        if (details.open) {
+                            svg.style.transform = 'rotate(180deg)';
+                        } else {
+                            svg.style.transform = 'rotate(0deg)';
+                        }
+                    });
+                });
+            
+
+                // Gráfico de pizza/doughnut
+                const ctx = document.getElementById('graficoNivel').getContext('2d');
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Alto', 'Médio', 'Baixo'],
+                        datasets: [{
+                            data: [2, 0, 1],
+                            backgroundColor: ['#dc2626', '#f59e0b', '#16a34a'],
+                            borderWidth: 2,
+                            borderColor: '#ffffff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    padding: 20,
+                                    font: {
+                                        size: 14
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const value = context.raw;
+                                        const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                                        return `${context.label}: ${value} (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            
+
+                // Efeito de fundo animado
+                if (typeof VANTA !== 'undefined') {
+                    VANTA.WAVES({
+                        el: '#vanta-bg',
+                        mouseControls: false,
+                        touchControls: false,
+                        gyroControls: false,
+                        minHeight: 220.0,
+                        scale: 1.0,
+                        scaleMobile: 1.0,
+                        color: 0x1e3a8a,
+                        shininess: 35,
+                        waveHeight: 18,
+                        waveSpeed: 0.6,
+                        zoom: 0.85
+                    });
+                }
+
+                // Inicializar filtros
+                document.addEventListener('DOMContentLoaded', function() {
+                    aplicarFiltros();
+                });
+            
+</script>
+</body>
+</html>
