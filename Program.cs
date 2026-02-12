@@ -14,11 +14,6 @@ try
     System.Net.SecurityProtocolType.Tls12 |
     System.Net.SecurityProtocolType.Tls13;
 
-    // ==========================================
-    // ===========
-    // 1. BOOTSTRAP DA APLICAÇÃO
-    // =====================================================
-
     using var geminiService = new GeminiService();
     var pdfReaderService = new PdfReaderService();
     var pdfOutputService = new PdfService();
@@ -26,7 +21,6 @@ try
     var csvService = new CsvService();
     var config = new ConfigEnv();
 
-    // Diretório de saída
     var outputDir = Path.Combine(Directory.GetCurrentDirectory(), "consolidado");
     Directory.CreateDirectory(outputDir);
 
@@ -41,220 +35,193 @@ try
     string zipDownloadsDir = Path.Combine(Directory.GetCurrentDirectory(), "zipDownloads");
     string pdfsDir = Path.Combine(Directory.GetCurrentDirectory(), "pdfs");
 
-    // Coletar todos os PDFs com "Caderno_de_Encargos"
     int totalPdfs = await csvService.CollectCadernoDeEncargosPdfsAsync(zipDownloadsDir, pdfsDir);
 
     Console.WriteLine($"Total de PDFs preparados para processamento: {totalPdfs}");
 
+    var pdfFiles = pdfReaderService.GetPdfFiles()?.ToList() ?? new List<string>();
 
+    if (!pdfFiles.Any())
+    {
+        Console.WriteLine("Nenhum PDF encontrado.");
+        return;
+    }
 
-    // =====================================================
-    // 2. DESCOBERTA DOS PDFs
-    // =====================================================
+    var consolidado = new List<AnaliseConsolidadaItem>();
 
-//     var pdfFiles = pdfReaderService.GetPdfFiles()?.ToList() ?? new List<string>();
+    string jsonInstruction = @"
+Analise o documento e responda ESTRITAMENTE com um JSON válido (sem markdown) seguindo esta estrutura:
+{
+    ""titulo"": ""Titulo do Relatório"",
+    ""descricao"": ""Resumo executivo curto"",
+    ""objeto"": ""Descrição do objeto do contrato"",
+    ""localizacao"": ""Locais de execução"",
+    ""totalLinhas"": ""Ex: 12 circuitos"",
+    ""precoBase"": 0.0,
+    ""custoKm"": 0.0,
+    ""kmMax"": 0.0,
+    ""vigencia"": ""Ex: 60 dias"",
+    ""caucao"": ""Ex: 5%"",
+    ""pagamento"": ""Ex: 30 dias"",
+    ""conclusao"": ""Texto da conclusão final"",
+    ""clausulasFixas"": [
+        { ""area"": ""Ex: Frota"", ""clausula"": ""Art. 5"", ""requisito"": ""Descrição"" }
+    ],
+    ""aspetosVariaveis"": [
+        { ""titulo"": ""Ex: Preço"", ""descricao"": ""Critério"" }
+    ],
+    ""penalidades"": [
+        { ""nivel"": ""Leve/Grave"", ""exemplos"": ""Atraso"", ""coima"": ""Valor"", ""compulsoria"": ""Valor"" }
+    ],
+    ""riscos"": [
+        { ""tipo"": ""Alto/Baixo"", ""titulo"": ""Titulo"", ""descricao"": ""Descrição"" }
+    ]
+}";
 
-//     if (!pdfFiles.Any())
-//     {
-//         Console.WriteLine("Nenhum PDF encontrado.");
-//         return;
-//     }
+    string prompt;
 
-//     // Lista usada no relatório consolidado
-//     var consolidado = new List<AnaliseConsolidadaItem>();
+    if (config.Validating)
+    {
+        prompt =
+            "Estrutura obrigatória do procedimento, distinção entre cláusulas fixas e aspetos variáveis, " +
+            "regras de execução, penalidades e avaliação de risco (alto vs baixo).";
+    }
+    else
+    {
+        Console.WriteLine("Digite o prompt para validação do conteúdo:");
+        prompt = Console.ReadLine() ?? string.Empty;
 
-//     // =====================================================
-//     // 3. CONTRATO JSON PARA A IA
-//     // =====================================================
+        if (string.IsNullOrWhiteSpace(prompt))
+        {
+            Console.WriteLine("Prompt vazio. Saindo...");
+            return;
+        }
+    }
 
-//     string jsonInstruction = @"
-// Analise o documento e responda ESTRITAMENTE com um JSON válido (sem markdown) seguindo esta estrutura:
-// {
-//     ""titulo"": ""Titulo do Relatório"",
-//     ""descricao"": ""Resumo executivo curto"",
-//     ""objeto"": ""Descrição do objeto do contrato"",
-//     ""localizacao"": ""Locais de execução"",
-//     ""totalLinhas"": ""Ex: 12 circuitos"",
-//     ""precoBase"": 0.0,
-//     ""custoKm"": 0.0,
-//     ""kmMax"": 0.0,
-//     ""vigencia"": ""Ex: 60 dias"",
-//     ""caucao"": ""Ex: 5%"",
-//     ""pagamento"": ""Ex: 30 dias"",
-//     ""conclusao"": ""Texto da conclusão final"",
-//     ""clausulasFixas"": [
-//         { ""area"": ""Ex: Frota"", ""clausula"": ""Art. 5"", ""requisito"": ""Descrição"" }
-//     ],
-//     ""aspetosVariaveis"": [
-//         { ""titulo"": ""Ex: Preço"", ""descricao"": ""Critério"" }
-//     ],
-//     ""penalidades"": [
-//         { ""nivel"": ""Leve/Grave"", ""exemplos"": ""Atraso"", ""coima"": ""Valor"", ""compulsoria"": ""Valor"" }
-//     ],
-//     ""riscos"": [
-//         { ""tipo"": ""Alto/Baixo"", ""titulo"": ""Titulo"", ""descricao"": ""Descrição"" }
-//     ]
-// }";
+    string fullPrompt = $"{prompt}\n\n{jsonInstruction}";
 
-//     string prompt;
+    foreach (var pdfPath in pdfFiles)
+    {
+        try
+        {
+            Console.WriteLine($"\n=== Processando PDF: {pdfPath} ===");
 
-//     if (config.Validating)
-//     {
-//         prompt =
-//             "Estrutura obrigatória do procedimento, distinção entre cláusulas fixas e aspetos variáveis, " +
-//             "regras de execução, penalidades e avaliação de risco (alto vs baixo).";
-//     }
-//     else
-//     {
-//         Console.WriteLine("Digite o prompt para validação do conteúdo:");
-//         prompt = Console.ReadLine() ?? string.Empty;
+            var pdfText = pdfReaderService.ExtractTextFromPdf(pdfPath);
 
-//         if (string.IsNullOrWhiteSpace(prompt))
-//         {
-//             Console.WriteLine("Prompt vazio. Saindo...");
-//             return;
-//         }
-//     }
+            if (string.IsNullOrWhiteSpace(pdfText))
+            {
+                Console.WriteLine("PDF vazio. Ignorado.");
+                continue;
+            }
 
-//     string fullPrompt = $"{prompt}\n\n{jsonInstruction}";
+            var analysisJson = await geminiService.GenerateContentAsync(
+                pdfText,
+                fullPrompt
+            );
 
-//     // =====================================================
-//     // 4. PROCESSAMENTO DE CADA PDF
-//     // =====================================================
+            analysisJson = analysisJson.Trim();
+            if (analysisJson.StartsWith("```"))
+            {
+                int end = analysisJson.LastIndexOf("```");
+                if (end > 0)
+                    analysisJson = analysisJson.Substring(3, end - 3).Trim();
+            }
 
-//     foreach (var pdfPath in pdfFiles)
-//     {
-//         try
-//         {
-//             Console.WriteLine($"\n=== Processando PDF: {pdfPath} ===");
+            AnaliseDados dados;
+            try
+            {
+                dados = JsonSerializer.Deserialize<AnaliseDados>(
+                    analysisJson,
+                    new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    }
+                )!;
+            }
+            catch (JsonException)
+            {
+                Console.WriteLine("JSON inválido. Ignorado.");
+                Console.WriteLine(analysisJson);
+                continue;
+            }
 
-//             var pdfText = pdfReaderService.ExtractTextFromPdf(pdfPath);
+            var scoreRisco = pdfOutputService.CalcularScoreRisco(dados);
 
-//             if (string.IsNullOrWhiteSpace(pdfText))
-//             {
-//                 Console.WriteLine("PDF vazio. Ignorado.");
-//                 continue;
-//             }
+            var fileName = Path.GetFileNameWithoutExtension(pdfPath);
+            var outputPdfPath = Path.Combine(outputDir, $"{fileName}_analise.pdf");
+            var outputHtmlPath = Path.Combine(outputDir, $"{fileName}_analise.html");
 
-//             var analysisJson = await geminiService.GenerateContentAsync(
-//                 pdfText,
-//                 fullPrompt
-//             );
+            consolidado.Add(new AnaliseConsolidadaItem
+            {
+                Arquivo = Path.GetFileName(pdfPath),
+                Titulo = dados.Titulo,
+                Descricao = dados.Descricao,
+                ScoreRisco = scoreRisco,
+                Riscos = (dados.Riscos ?? new List<Risco>())
+                    .Select(r => new RiscoItem
+                    {
+                        Titulo = r.Titulo,
+                        Tipo = r.Tipo,
+                        Descricao = r.Descricao
+                    })
+                    .ToList(),
+                OutputHtmlPath = outputHtmlPath
+            });
 
-//             // Limpeza de blocos ```json
-//             analysisJson = analysisJson.Trim();
-//             if (analysisJson.StartsWith("```"))
-//             {
-//                 int end = analysisJson.LastIndexOf("```");
-//                 if (end > 0)
-//                     analysisJson = analysisJson.Substring(3, end - 3).Trim();
-//             }
+            pdfOutputService.CreateAnalysisPdf(
+                outputPdfPath,
+                Path.GetFileName(pdfPath),
+                dados
+            );
 
-//             AnaliseDados dados;
-//             try
-//             {
-//                 dados = JsonSerializer.Deserialize<AnaliseDados>(
-//                     analysisJson,
-//                     new JsonSerializerOptions
-//                     {
-//                         PropertyNameCaseInsensitive = true
-//                     }
-//                 )!;
-//             }
-//             catch (JsonException)
-//             {
-//                 Console.WriteLine("JSON inválido. Ignorado.");
-//                 Console.WriteLine(analysisJson);
-//                 continue;
-//             }
+            htmlWriterService.CreateAnalysisHtml(
+                outputHtmlPath,
+                Path.GetFileName(pdfPath),
+                dados
+            );
 
-//             // Cálculo do score de risco
-//             var scoreRisco = pdfOutputService.CalcularScoreRisco(dados);
+            Console.WriteLine($"✔ PDF gerado:  {outputPdfPath}");
+            Console.WriteLine($"✔ HTML gerado: {outputHtmlPath}");
+        }
+        catch (Exception exPdf)
+        {
+            Console.WriteLine($"Erro ao processar {pdfPath}: {exPdf.Message}");
+        }
+    }
 
-//             // Caminhos de saída
-//             var fileName = Path.GetFileNameWithoutExtension(pdfPath);
-//             var outputPdfPath = Path.Combine(outputDir, $"{fileName}_analise.pdf");
-//             var outputHtmlPath = Path.Combine(outputDir, $"{fileName}_analise.html");
+    if (consolidado.Any())
+    {
+        var consolidadoOrdenado = consolidado
+            .OrderByDescending(c => c.ScoreRisco)
+            .ToList();
 
-//             // Dados para o consolidado
-//             consolidado.Add(new AnaliseConsolidadaItem
-//             {
-//                 Arquivo = Path.GetFileName(pdfPath),
-//                 Titulo = dados.Titulo,
-//                 Descricao = dados.Descricao,
-//                 ScoreRisco = scoreRisco,
-//                 Riscos = (dados.Riscos ?? new List<Risco>())
-//                     .Select(r => new RiscoItem
-//                     {
-//                         Titulo = r.Titulo,
-//                         Tipo = r.Tipo,
-//                         Descricao = r.Descricao
-//                     })
-//                     .ToList(),
-//                 OutputHtmlPath = outputHtmlPath
-//             });
+        var consolidatedHtmlPath = Path.Combine(
+            outputDir,
+            "relatorio_consolidado.html"
+        );
 
-//             // Outputs individuais
-//             pdfOutputService.CreateAnalysisPdf(
-//                 outputPdfPath,
-//                 Path.GetFileName(pdfPath),
-//                 dados
-//             );
+        var htmlConsolidatedWriterService = new HtmlConsolidatedWriterService();
+        htmlConsolidatedWriterService.CreateConsolidatedHtml(
+            consolidatedHtmlPath,
+            consolidadoOrdenado
+        );
 
-//             htmlWriterService.CreateAnalysisHtml(
-//                 outputHtmlPath,
-//                 Path.GetFileName(pdfPath),
-//                 dados
-//             );
+        Console.WriteLine($"✔ HTML consolidado gerado: {consolidatedHtmlPath}");
 
-//             Console.WriteLine($"✔ PDF gerado:  {outputPdfPath}");
-//             Console.WriteLine($"✔ HTML gerado: {outputHtmlPath}");
-//         }
-//         catch (Exception exPdf)
-//         {
-//             Console.WriteLine($"Erro ao processar {pdfPath}: {exPdf.Message}");
-//         }
-//     }
+        var consolidatedPdfPath = Path.Combine(
+            outputDir,
+            "relatorio_consolidado.pdf"
+        );
 
-//     // =====================================================
-//     // 5. RELATÓRIOS CONSOLIDADOS (HTML + PDF)
-//     // =====================================================
+        var pdfConsolidatedService = new RealLifeLawAssist.Services.PdfConsolidatedService();
 
-//     if (consolidado.Any())
-//     {
-//         var consolidadoOrdenado = consolidado
-//             .OrderByDescending(c => c.ScoreRisco)
-//             .ToList();
+        pdfConsolidatedService.CreateConsolidatedPdf(
+            consolidatedPdfPath,
+            consolidadoOrdenado
+        );
 
-//         // HTML consolidado
-//         var consolidatedHtmlPath = Path.Combine(
-//             outputDir,
-//             "relatorio_consolidado.html"
-//         );
-
-//         var htmlConsolidatedWriterService = new HtmlConsolidatedWriterService();
-//         htmlConsolidatedWriterService.CreateConsolidatedHtml(
-//             consolidatedHtmlPath,
-//             consolidadoOrdenado
-//         );
-
-//         Console.WriteLine($"✔ HTML consolidado gerado: {consolidatedHtmlPath}");
-
-//         // PDF consolidado
-//         var consolidatedPdfPath = Path.Combine(
-//             outputDir,
-//             "relatorio_consolidado.pdf"
-//         );
-
-//         var pdfConsolidatedService = new RealLifeLawAssist.Services.PdfConsolidatedService();
-
-//         pdfConsolidatedService.CreateConsolidatedPdf(
-//             consolidatedPdfPath,
-//             consolidadoOrdenado
-//         );
-
-//         Console.WriteLine($"✔ PDF consolidado gerado: {consolidatedPdfPath}");
-//     }
+        Console.WriteLine($"✔ PDF consolidado gerado: {consolidatedPdfPath}");
+    }
 }
 catch (Exception ex)
 {
