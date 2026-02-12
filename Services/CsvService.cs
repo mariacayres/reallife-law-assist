@@ -5,7 +5,6 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using CsvHelper;
 using CsvHelper.Configuration;
-using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO.Compression;
@@ -20,10 +19,10 @@ namespace RealLifeLawAssist.Services
         public CsvService()
         {
             _httpClient = new HttpClient();
-
             _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(
                 "RealLifeLawAssist/1.0 (+https://example.com)"
             );
+            _httpClient.Timeout = TimeSpan.FromMinutes(5);
         }
 
         /// <summary>
@@ -31,15 +30,7 @@ namespace RealLifeLawAssist.Services
         /// </summary>
         public async Task<string> DownloadCsvAsync(DateTime dataPublicacao)
         {
-            var url =
-                $"https://www.base.gov.pt/Base4/pt/resultados/?" +
-                $"type=csv_anuncios" +
-                $"&tipocontrato=0" +
-                $"&desdedatapublicacao={dataPublicacao:yyyy-MM-dd}" +
-                $"&atedatapublicacao={dataPublicacao:yyyy-MM-dd}" +
-                $"&tipoacto=0" +
-                $"&tipomodelo=1" +
-                $"&sort(-drPublicationDate)";
+            var url = MontarUrlBaseGov(dataPublicacao);
 
             try
             {
@@ -59,13 +50,16 @@ namespace RealLifeLawAssist.Services
             {
                 throw new Exception($"Erro ao descarregar CSV do BASE.gov.pt: {ex.Message}", ex);
             }
+            catch (TaskCanceledException ex)
+            {
+                throw new Exception($"Timeout ao descarregar CSV do BASE.gov.pt: {ex.Message}", ex);
+            }
         }
 
-          /// <summary>
+        /// <summary>
         /// Lê o CSV, baixa os ZIPs da coluna "Ligação para Peças" e descompacta em pastas nomeadas pelo Número do Anúncio.
+        /// Suporta URLs HTTP/HTTPS e arquivos locais (file://) para testes.
         /// </summary>
-        /// <param name="csvPath">Caminho do CSV baixado</param>
-        /// <param name="outputBaseDir">Pasta base onde os ZIPs serão baixados e descompactados</param>
         public async Task<int> DownloadAndExtractZipFilesFromCsvAsync(string csvPath, string outputBaseDir)
         {
             if (!File.Exists(csvPath))
@@ -76,7 +70,11 @@ namespace RealLifeLawAssist.Services
             var config = new CsvConfiguration(CultureInfo.InvariantCulture)
             {
                 Delimiter = ";",
-                BadDataFound = null
+                BadDataFound = null,
+                MissingFieldFound = null,
+                HeaderValidated = null,
+                IgnoreBlankLines = true,
+                TrimOptions = TrimOptions.Trim
             };
 
             using var reader = new StreamReader(csvPath);
@@ -92,36 +90,22 @@ namespace RealLifeLawAssist.Services
                 if (!dict.TryGetValue("Ligação para Peças", out var urlObj))
                     continue;
 
-                string url = urlObj?.ToString() ?? "";
+                string url = urlObj?.ToString()?.Trim();
                 if (string.IsNullOrWhiteSpace(url))
                     continue;
 
                 string numeroAnuncio = dict.TryGetValue("Número do Anúncio", out var numObj)
-                    ? numObj?.ToString() ?? $"anuncio_{count + 1}"
+                    ? numObj?.ToString()?.Trim() ?? $"anuncio_{count + 1}"
                     : $"anuncio_{count + 1}";
 
                 // Remove caracteres inválidos de nome de pasta/arquivo
-                foreach (var c in Path.GetInvalidFileNameChars())
-                    numeroAnuncio = numeroAnuncio.Replace(c, '_');
+                numeroAnuncio = SanitizarNomeArquivo(numeroAnuncio);
 
                 try
                 {
-                    // Cria pasta para este anúncio
-                    string anuncioDir = Path.Combine(outputBaseDir, numeroAnuncio);
-                    Directory.CreateDirectory(anuncioDir);
-
-                    // Baixa o ZIP
-                    byte[] zipBytes = await _httpClient.GetByteArrayAsync(url);
-
-                    string zipPath = Path.Combine(anuncioDir, $"{numeroAnuncio}.zip");
-                    await File.WriteAllBytesAsync(zipPath, zipBytes);
-
-                    // Descompacta o ZIP na mesma pasta
-                    ZipFile.ExtractToDirectory(zipPath, anuncioDir, overwriteFiles: true);
-
-                    Console.WriteLine($"✔ Anúncio {numeroAnuncio}: ZIP baixado e extraído.");
-
+                    await ProcessarAnuncioAsync(url, numeroAnuncio, outputBaseDir);
                     count++;
+                    Console.WriteLine($"✔ Anúncio {numeroAnuncio}: ZIP baixado e extraído.");
                 }
                 catch (Exception ex)
                 {
@@ -134,11 +118,56 @@ namespace RealLifeLawAssist.Services
         }
 
         /// <summary>
-        /// Varre a pasta base (zipDownloads), encontra todos os PDFs que contenham "Caderno_de_Encargos" no nome
-        /// e copia para uma pasta central (pdfs) para processamento.
+        /// Processa um único anúncio: baixa o ZIP e extrai seu conteúdo
+        /// Só cria a pasta após o download bem-sucedido
         /// </summary>
-        /// <param name="zipDownloadsDir">Pasta onde os ZIPs foram extraídos</param>
-        /// <param name="pdfOutputDir">Pasta onde os PDFs serão copiados</param>
+        private async Task ProcessarAnuncioAsync(string url, string numeroAnuncio, string outputBaseDir)
+        {
+            // PRIMEIRO: Baixa o ZIP
+            byte[] zipBytes = await DownloadArquivoAsync(url);
+
+            // SÓ DEPOIS: Cria a pasta e salva o arquivo
+            string anuncioDir = Path.Combine(outputBaseDir, numeroAnuncio);
+            Directory.CreateDirectory(anuncioDir);
+
+            string zipPath = Path.Combine(anuncioDir, $"{numeroAnuncio}.zip");
+            await File.WriteAllBytesAsync(zipPath, zipBytes);
+
+            // Descompacta o ZIP
+            ZipFile.ExtractToDirectory(zipPath, anuncioDir, overwriteFiles: true);
+        }
+
+        /// <summary>
+        /// Baixa um arquivo de URL HTTP/HTTPS ou de caminho local (file://)
+        /// </summary>
+        private async Task<byte[]> DownloadArquivoAsync(string url)
+        {
+            // Suporte para arquivos locais (file://) - usado apenas em testes
+            if (url.StartsWith("file://", StringComparison.OrdinalIgnoreCase))
+            {
+                string localPath = url.Substring(7);
+                localPath = Uri.UnescapeDataString(localPath);
+                
+                if (!File.Exists(localPath))
+                    throw new FileNotFoundException($"Arquivo local não encontrado: {localPath}");
+                
+                return await File.ReadAllBytesAsync(localPath);
+            }
+            
+            // URLs HTTP/HTTPS - uso em produção
+            try
+            {
+                return await _httpClient.GetByteArrayAsync(url);
+            }
+            catch (HttpRequestException ex)
+            {
+                throw new Exception($"Erro ao baixar arquivo de {url}: {ex.Message}", ex);
+            }
+        }
+
+        /// <summary>
+        /// Varre a pasta base, encontra PDFs com "Caderno_de_Encargos" no nome e copia para pasta central.
+        /// </summary>
         public async Task<int> CollectCadernoDeEncargosPdfsAsync(string zipDownloadsDir, string pdfOutputDir)
         {
             if (!Directory.Exists(zipDownloadsDir))
@@ -147,31 +176,40 @@ namespace RealLifeLawAssist.Services
             Directory.CreateDirectory(pdfOutputDir);
 
             int count = 0;
-
-            // Varrer todas as subpastas da pasta zipDownloads
             var anuncioDirs = Directory.GetDirectories(zipDownloadsDir);
 
             foreach (var anuncioDir in anuncioDirs)
             {
-                // A pasta "Processo Concurso" pode estar dentro do anúncio
-                var processoConcursoDirs = Directory.GetDirectories(anuncioDir, "Processo Concurso", SearchOption.AllDirectories);
-
-                foreach (var procDir in processoConcursoDirs)
+                try
                 {
-                    // Encontrar todos os PDFs com "Caderno_de_Encargos" no nome
-                    var pdfFiles = Directory.GetFiles(procDir, "*Caderno_de_Encargos*.pdf", SearchOption.TopDirectoryOnly);
+                    var processoConcursoDirs = Directory.GetDirectories(anuncioDir, "Processo Concurso", SearchOption.AllDirectories);
 
-                    foreach (var pdfPath in pdfFiles)
+                    foreach (var procDir in processoConcursoDirs)
                     {
-                        string fileName = Path.GetFileName(pdfPath);
-                        string destPath = Path.Combine(pdfOutputDir, fileName);
+                        var pdfFiles = Directory.GetFiles(procDir, "*Caderno_de_Encargos*.pdf", SearchOption.TopDirectoryOnly);
 
-                        // Copiar o PDF para a pasta central (sobrescreve se já existir)
-                        File.Copy(pdfPath, destPath, overwrite: true);
+                        foreach (var pdfPath in pdfFiles)
+                        {
+                            string fileName = Path.GetFileName(pdfPath);
+                            string destPath = Path.Combine(pdfOutputDir, fileName);
 
-                        Console.WriteLine($"✔ PDF coletado: {fileName}");
-                        count++;
+                            // Evitar sobrescrita
+                            if (File.Exists(destPath))
+                            {
+                                string nomeSemExt = Path.GetFileNameWithoutExtension(fileName);
+                                string extensao = Path.GetExtension(fileName);
+                                destPath = Path.Combine(pdfOutputDir, $"{nomeSemExt}_{Guid.NewGuid():N}{extensao}");
+                            }
+
+                            File.Copy(pdfPath, destPath, overwrite: false);
+                            Console.WriteLine($"✔ PDF coletado: {Path.GetFileName(destPath)}");
+                            count++;
+                        }
                     }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"❌ Erro ao processar pasta {anuncioDir}: {ex.Message}");
                 }
             }
 
@@ -179,11 +217,49 @@ namespace RealLifeLawAssist.Services
             return count;
         }
 
+        /// <summary>
+        /// Remove caracteres inválidos para nomes de arquivo/pasta
+        /// </summary>
+        private string SanitizarNomeArquivo(string nome)
+        {
+            if (string.IsNullOrEmpty(nome))
+                return "anuncio_sem_nome";
+
+            var charsInvalids = Path.GetInvalidFileNameChars();
+            foreach (var c in charsInvalids)
+            {
+                nome = nome.Replace(c, '_');
+            }
+            
+            nome = nome.Trim();
+            
+            if (string.IsNullOrWhiteSpace(nome))
+                return "anuncio_sanitizado";
+                
+            return nome;
+        }
+
+        /// <summary>
+        /// Monta a URL do BASE.gov.pt para download do CSV
+        /// </summary>
+        private string MontarUrlBaseGov(DateTime dataPublicacao)
+        {
+            return $"https://www.base.gov.pt/Base4/pt/resultados/?" +
+                   $"type=csv_anuncios" +
+                   $"&tipocontrato=0" +
+                   $"&desdedatapublicacao={dataPublicacao:yyyy-MM-dd}" +
+                   $"&atedatapublicacao={dataPublicacao:yyyy-MM-dd}" +
+                   $"&tipoacto=0" +
+                   $"&tipomodelo=1" +
+                   $"&sort(-drPublicationDate)";
+        }
+
         public void Dispose()
         {
             if (_disposed) return;
-            _httpClient.Dispose();
+            _httpClient?.Dispose();
             _disposed = true;
+            GC.SuppressFinalize(this);
         }
     }
 }
